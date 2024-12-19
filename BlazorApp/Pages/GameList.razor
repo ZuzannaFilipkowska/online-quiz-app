@@ -1,0 +1,125 @@
+@page "/games"
+
+@using Grpc.Net.Client
+@using QuizApp
+@inject NavigationManager NavigationManager
+
+<div class="games-list-container">
+    <h2>Aktywne Gry</h2>
+
+    @if (activeGames == null)
+    {
+        <div class="loading-message">
+            <p><em>£adowanie aktywnych gier...</em></p>
+        </div>
+    }
+    else if (activeGames.Count == 0)
+    {
+        <div class="no-games-message">
+            <p>Brak aktywnych gier.</p>
+        </div>
+    }
+    else
+    {
+        <div class="games-list">
+            @foreach (var game in activeGames)
+            {
+                <div class="game-card">
+                    <h3>Gra: @game.GameId</h3>
+                    <p><strong>Status:</strong> @game.Status</p>
+                    <p><strong>Kod Gry:</strong> @game.GameCode</p>
+                    <button class="details-button" @onclick="() => ViewGameDetails(game.GameId)">Szczegó³y</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Game> activeGames;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Tworzenie kana³u gRPC z obs³ug¹ HTTP/2 w przegl¹darce
+        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        {
+            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+        });
+
+        // Tworzenie klienta gRPC
+        var client = new QuizService.QuizServiceClient(channel);
+
+        // Pobieranie aktywnych gier (wywo³anie metody GetActiveGames)
+        var response = await client.GetActiveGamesAsync(new Empty());
+        activeGames = response.Games.ToList();
+    }
+
+    private void ViewGameDetails(string gameId)
+    {
+        NavigationManager.NavigateTo($"/game/{gameId}");
+    }
+}
+
+<style>
+    .games-list-container {
+        margin: 20px auto;
+        padding: 20px;
+        max-width: 800px;
+        font-family: Arial, sans-serif;
+    }
+
+    h2 {
+        text-align: center;
+        color: #333;
+    }
+
+    .loading-message, .no-games-message {
+        text-align: center;
+        font-size: 18px;
+        color: #777;
+        margin: 20px 0;
+    }
+
+    .games-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+    }
+
+    .game-card {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        width: 300px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .game-card h3 {
+        margin: 10px 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .game-card p {
+        font-size: 14px;
+        color: #555;
+    }
+
+    .details-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+    .details-button:hover {
+        background-color: #0056b3;
+    }
+</style>

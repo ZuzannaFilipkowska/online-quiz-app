@@ -1,9 +1,15 @@
 {
   "version": 2,
-  "dgSpecHash": "amk2BN66svY=",
+  "dgSpecHash": "brLKtiS5JJg=",
   "success": true,
   "projectFilePath": "C:\\Users\\slone\\source\\repos\\online-quiz-app\\BlazorApp\\BlazorApp.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\slone\\.nuget\\packages\\google.protobuf\\3.21.1\\google.protobuf.3.21.1.nupkg.sha512",
+    "C:\\Users\\slone\\.nuget\\packages\\grpc.core.api\\2.67.0\\grpc.core.api.2.67.0.nupkg.sha512",
+    "C:\\Users\\slone\\.nuget\\packages\\grpc.net.client\\2.67.0\\grpc.net.client.2.67.0.nupkg.sha512",
+    "C:\\Users\\slone\\.nuget\\packages\\grpc.net.client.web\\2.67.0\\grpc.net.client.web.2.67.0.nupkg.sha512",
+    "C:\\Users\\slone\\.nuget\\packages\\grpc.net.common\\2.67.0\\grpc.net.common.2.67.0.nupkg.sha512",
+    "C:\\Users\\slone\\.nuget\\packages\\grpc.tools\\2.46.3\\grpc.tools.2.46.3.nupkg.sha512",
     "C:\\Users\\slone\\.nuget\\packages\\microsoft.aspnetcore.authorization\\8.0.11\\microsoft.aspnetcore.authorization.8.0.11.nupkg.sha512",
     "C:\\Users\\slone\\.nuget\\packages\\microsoft.aspnetcore.components\\8.0.11\\microsoft.aspnetcore.components.8.0.11.nupkg.sha512",
     "C:\\Users\\slone\\.nuget\\packages\\microsoft.aspnetcore.components.analyzers\\8.0.11\\microsoft.aspnetcore.components.analyzers.8.0.11.nupkg.sha512",

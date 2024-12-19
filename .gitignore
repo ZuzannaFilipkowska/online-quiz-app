@@ -2,3 +2,5 @@ BlazorApp/obj/**
 BlazorApp/bin/**
 GrpcServer/obj/**
 GrpcServer/bin/**
+GrpcServer/bin/Debug/**
+.vs/**

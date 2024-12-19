@@ -1,0 +1,81 @@
+﻿@page "/quiz/{id}"
+
+@using Grpc.Net.Client
+@using QuizApp
+@inject NavigationManager NavigationManager
+
+<h3>Quiz Szczegóły</h3>
+
+@if (quiz == null || questions == null)
+{
+    <p><em>Ładowanie szczegółów quizu...</em></p>
+}
+else
+{
+    <div>
+        <h4>@quiz.Title</h4>
+        <p><strong>Opis:</strong> @quiz.Description</p>
+
+        <h5>Pytania:</h5>
+        @if (questions.Count == 0)
+        {
+            <p><em>Brak pytań w tym quizie.</em></p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var question in questions)
+                {
+                    <li>
+                        <p><strong>Pytanie:</strong> @question.QuestionText</p>
+                        <ul>
+                            @foreach (var answer in question.Answers)
+                            {
+                                <li>
+                                    @if (answer.IsCorrect)
+                                    {
+                                        <span style="color: green;">✔ </span>
+                                    }
+                                    @answer.Text
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    private Quiz quiz;
+    private List<Question> questions;
+    [Parameter]
+    public string? Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Tworzenie kanału gRPC z obsługą HTTP/2 w przeglądarce
+            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+            {
+                HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+            });
+
+            // Tworzenie klienta gRPC
+            var client = new QuizService.QuizServiceClient(channel);
+
+            // Pobieranie szczegółów quizu
+            var request = new QuizRequest { QuizId = Id };
+            var response = await client.GetQuizDetailsAsync(request);
+
+            quiz = response.Quiz;
+            questions = response.Questions.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd podczas ładowania szczegółów quizu: {ex.Message}");
+        }
+    }
+}

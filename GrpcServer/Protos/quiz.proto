@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+option csharp_namespace = "QuizApp";
+
+service QuizService {
+    // Pobiera listê quizów
+    rpc GetQuizzes (Empty) returns (QuizzesResponse);
+    
+    // Pobiera szczegó³y konkretnego quizu
+    rpc GetQuizDetails (QuizRequest) returns (QuizDetailsResponse);
+    
+    // Tworzy now¹ grê na podstawie quizu
+    rpc CreateGame (QuizRequest) returns (GameResponse);
+
+    // Pobiera szczegó³y konkretnej gry (np. pytania, uczestnicy, status gry)
+    rpc GetGameDetails (GameRequest) returns (GameDetailsResponse);
+    
+    // Rejestruje odpowiedŸ uczestnika
+    rpc SubmitAnswer (AnswerRequest) returns (AnswerResponse);
+    
+    // Pobiera wyniki koñcowe gry
+    rpc GetGameResults (GameRequest) returns (GameResultsResponse);
+
+    // Dodaje nowy quiz (dla nauczyciela)
+    rpc AddQuiz (AddQuizRequest) returns (QuizResponse);
+
+    // Aktualizuje istniej¹cy quiz
+    rpc UpdateQuiz (UpdateQuizRequest) returns (QuizResponse);
+
+    // Pobiera liste gier
+       rpc GetActiveGames (Empty) returns (ActiveGamesResponse);
+}
+
+message Empty {}
+
+message QuizzesResponse {
+    repeated Quiz quizzes = 1;
+}
+
+message Quiz {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    string creator_id = 4; // Id u¿ytkownika, który stworzy³ quiz
+}
+
+message QuizRequest {
+    string quiz_id = 1;
+}
+
+message QuizDetailsResponse {
+    Quiz quiz = 1;
+    repeated Question questions = 2;
+}
+
+message Question {
+    string id = 1;
+    string question_text = 2;
+    repeated Answer answers = 3;
+}
+
+message Answer {
+    string id = 1;
+    string text = 2;
+    bool is_correct = 3;
+}
+
+message GameResponse {
+    string game_id = 1;
+    string message = 2;
+}
+
+message GameRequest {
+    string game_id = 1;
+}
+
+message GameDetailsResponse {
+    string game_id = 1;
+    string status = 2; // np. "in_progress", "completed"
+    repeated Player players = 3;
+    repeated Question questions = 4; // Lista pytañ i odpowiedzi 
+}
+
+message Player {
+    string id = 1;
+    string name = 2;
+    int32 score = 3;
+}
+
+message AnswerRequest {
+    string game_id = 1;
+    string player_id = 2;
+    string question_id = 3;
+    string answer_id = 4;
+}
+
+message AnswerResponse {
+    bool is_correct = 1;
+    string message = 2;
+    int32 player_score = 3; // Aktualny wynik gracza
+}
+
+message GameResultsResponse {
+    string game_id = 1;
+    repeated Player players = 2; // Wyniki koñcowe graczy
+}
+
+message AddQuizRequest {
+    string title = 1;
+    string description = 2;
+    repeated Question questions = 3;
+}
+
+message UpdateQuizRequest {
+    string quiz_id = 1;
+    string title = 2;
+    string description = 3;
+    repeated Question questions = 4;
+}
+
+message QuizResponse {
+    string quiz_id = 1;
+    string message = 2;
+}
+
+message ActiveGamesResponse {
+    repeated Game games = 1;
+}
+
+message Game {
+    string game_id = 1;
+    string game_code = 2;
+    string status = 3; // np. "Oczekuj¹ca", "W toku", "Zakoñczona"
+}

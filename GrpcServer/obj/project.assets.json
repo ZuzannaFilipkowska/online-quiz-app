@@ -68,6 +68,22 @@
           "Microsoft.AspNetCore.App"
         ]
       },
+      "Grpc.AspNetCore.Web/2.46.0": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Grpc.AspNetCore.Web.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Grpc.AspNetCore.Web.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
       "Grpc.Core.Api/2.40.0": {
         "type": "package",
         "dependencies": {
@@ -387,6 +403,28 @@
         "lib/netcoreapp3.0/Grpc.AspNetCore.Server.ClientFactory.dll",
         "lib/netcoreapp3.0/Grpc.AspNetCore.Server.ClientFactory.pdb",
         "lib/netcoreapp3.0/Grpc.AspNetCore.Server.ClientFactory.xml",
+        "packageIcon.png"
+      ]
+    },
+    "Grpc.AspNetCore.Web/2.46.0": {
+      "sha512": "NwO1bMu1/bUT/waE8SK0JSDEDKPDnSdOdzS1yrpkvaikgejg8hHZgHdlbJywYD1QVGSZhS7P3S7WHWOi0LhgCQ==",
+      "type": "package",
+      "path": "grpc.aspnetcore.web/2.46.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "grpc.aspnetcore.web.2.46.0.nupkg.sha512",
+        "grpc.aspnetcore.web.nuspec",
+        "lib/net5.0/Grpc.AspNetCore.Web.dll",
+        "lib/net5.0/Grpc.AspNetCore.Web.pdb",
+        "lib/net5.0/Grpc.AspNetCore.Web.xml",
+        "lib/net6.0/Grpc.AspNetCore.Web.dll",
+        "lib/net6.0/Grpc.AspNetCore.Web.pdb",
+        "lib/net6.0/Grpc.AspNetCore.Web.xml",
+        "lib/netcoreapp3.0/Grpc.AspNetCore.Web.dll",
+        "lib/netcoreapp3.0/Grpc.AspNetCore.Web.pdb",
+        "lib/netcoreapp3.0/Grpc.AspNetCore.Web.xml",
         "packageIcon.png"
       ]
     },
@@ -712,7 +750,8 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
-      "Grpc.AspNetCore >= 2.40.0"
+      "Grpc.AspNetCore >= 2.40.0",
+      "Grpc.AspNetCore.Web >= 2.46.0"
     ]
   },
   "packageFolders": {
@@ -768,6 +807,10 @@
           "Grpc.AspNetCore": {
             "target": "Package",
             "version": "[2.40.0, )"
+          },
+          "Grpc.AspNetCore.Web": {
+            "target": "Package",
+            "version": "[2.46.0, )"
           }
         },
         "imports": [

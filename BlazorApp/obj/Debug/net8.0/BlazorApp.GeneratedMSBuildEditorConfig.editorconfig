@@ -28,16 +28,36 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/Counter.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/Example/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXhhbXBsZVxDb3VudGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/Home.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/Example/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXhhbXBsZVxXZWF0aGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/Weather.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcV2VhdGhlci5yYXpvcg==
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/GameDetails.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcR2FtZURldGFpbHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/GameList.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcR2FtZUxpc3QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/NewGame.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTmV3R2FtZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/NewQuiz.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTmV3UXVpei5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/QuizDetails.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUXVpekRldGFpbHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/slone/source/repos/online-quiz-app/BlazorApp/Pages/QuizList.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUXVpekxpc3QucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/slone/source/repos/online-quiz-app/BlazorApp/_Imports.razor]
