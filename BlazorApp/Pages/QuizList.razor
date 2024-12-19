@@ -6,6 +6,7 @@
 
 <div class="quiz-list-container">
     <h2>Lista Quizów</h2>
+    <button class="open-modal-button" @onclick="OpenModal">Dodaj Nowy Quiz</button>
 
     @if (quizzes == null)
     {
@@ -34,8 +35,39 @@
     }
 </div>
 
+@if (isModalOpen)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <span class="close-button" @onclick="CloseModal">&times;</span>
+            <h3>Dodaj Nowy Quiz</h3>
+            <div>
+                <label for="title">Tytuł:</label>
+                <input id="title" @bind="newQuizTitle" placeholder="Wpisz tytuł quizu" />
+            </div>
+            <div>
+                <label for="description">Opis:</label>
+                <textarea id="description" @bind="newQuizDescription" placeholder="Wpisz opis quizu"></textarea>
+            </div>
+            @if (showValidationMessage)
+{
+    <div class="validation-message">
+        <p>Wszystkie pola muszą być wypełnione!</p>
+    </div>
+}
+
+
+            <button class="add-quiz-button" @onclick="AddNewQuiz">Dodaj Quiz</button>
+        </div>
+    </div>
+}
+
 @code {
     private List<Quiz> quizzes;
+    private string newQuizTitle;
+    private string newQuizDescription;
+    private bool isModalOpen;
+    private bool showValidationMessage = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,6 +79,60 @@
         var client = new QuizService.QuizServiceClient(channel);
         var response = await client.GetQuizzesAsync(new Empty());
         quizzes = response.Quizzes.ToList();
+    }
+
+private async Task AddNewQuiz()
+{
+    if (string.IsNullOrWhiteSpace(newQuizTitle) || string.IsNullOrWhiteSpace(newQuizDescription))
+    {
+        // Jeśli tytuł lub opis jest pusty, ustaw komunikat o błędzie
+        showValidationMessage = true;
+        return;
+    }
+
+    using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+    {
+        HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+    });
+
+    var client = new QuizService.QuizServiceClient(channel);
+
+    // Tworzymy nową listę pytań
+    var questionsList = new List<Question>();  // Pusta lista pytań na początek
+
+    // Tworzymy obiekt AddQuizRequest
+    var newQuizRequest = new AddQuizRequest
+    {
+        Title = newQuizTitle,
+        Description = newQuizDescription,
+        Questions = { questionsList } // Ustawiamy listę pytań
+    };
+
+    // Wysyłamy obiekt AddQuizRequest
+    var response = await client.AddQuizAsync(newQuizRequest);
+
+    // Odśwież listę quizów
+    var quizzesResponse = await client.GetQuizzesAsync(new Empty());
+    quizzes = quizzesResponse.Quizzes.ToList();
+
+    // Resetowanie pól i zamknięcie modala
+    newQuizTitle = string.Empty;
+    newQuizDescription = string.Empty;
+    showValidationMessage = false;
+    CloseModal();
+}
+
+
+
+
+    private void OpenModal()
+    {
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
     }
 
     private void ViewQuiz(string quizId)
@@ -61,11 +147,26 @@
         padding: 20px;
         max-width: 800px;
         font-family: Arial, sans-serif;
+        text-align: center;
     }
 
     h2 {
-        text-align: center;
         color: #333;
+    }
+
+    .open-modal-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-bottom: 20px;
+    }
+
+    .open-modal-button:hover {
+        background-color: #218838;
     }
 
     .loading-message, .no-quizzes-message {
@@ -116,5 +217,63 @@
 
     .view-quiz-button:hover {
         background-color: #0056b3;
+    }
+
+    /* Modal styles */
+    .modal {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        width: 400px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-button {
+        font-size: 24px;
+        font-weight: bold;
+        color: #aaa;
+        float: right;
+        cursor: pointer;
+    }
+
+    .close-button:hover {
+        color: black;
+    }
+
+    .add-quiz-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+
+    .add-quiz-button:hover {
+        background-color: #218838;
+    }
+
+    .modal-content input, .modal-content textarea {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
     }
 </style>

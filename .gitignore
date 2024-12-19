@@ -4,3 +4,5 @@ GrpcServer/obj/**
 GrpcServer/bin/**
 GrpcServer/bin/Debug/**
 .vs/**
+bin/
+obj/

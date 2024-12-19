@@ -151,4 +151,39 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return Task.FromResult(response);
     }
 
+    // Implementacja metody AddQuiz
+    public override Task<QuizResponse> AddQuiz(AddQuizRequest request, ServerCallContext context)
+    {
+        // Walidacja danych
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Tytu³ i opis quizu s¹ wymagane."));
+        }
+
+        // Generowanie nowego ID dla quizu
+        var newQuizId = Guid.NewGuid().ToString();
+
+        // Tworzenie nowego quizu
+        var newQuiz = new Quiz
+        {
+            Id = newQuizId,
+            Title = request.Title,
+            Description = request.Description,
+            // Przekazywanie pytañ
+          //  Questions = { request.Questions }
+        };
+
+        // Zapisanie quizu w pamiêci
+        //_quizzes.Add(newQuiz);
+
+        // Przygotowanie odpowiedzi
+        var response = new QuizResponse
+        {
+            QuizId = newQuizId,
+            Message = "Quiz zosta³ pomyœlnie dodany."
+        };
+
+        return Task.FromResult(response);
+    }
+
 }
