@@ -49,12 +49,59 @@
                 <label for="description">Opis:</label>
                 <textarea id="description" @bind="newQuizDescription" placeholder="Wpisz opis quizu"></textarea>
             </div>
+
+            <div class="questions-section">
+                <div>
+                    <h3>Pytania</h3>
+                </div>
+                <div>
+                      <h4>Dodane pytania</h4>
+                      <div>
+
+                             @if (newQuizQuestions.Count == 0)
+                                {
+                                    <div class="no-quizzes-message">
+                                        <p>Brak dodanych pytań.</p>
+                                    </div>
+                                }
+
+                          @foreach (var q in newQuizQuestions) {
+                          <div>
+                              <p>@q.QuestionText</p>
+                          </div>
+                          }
+                      </div>
+                 </div>
+                     <div class="question">
+                    <h4>Dodaj pytanie</h4>
+
+                    <div>
+                    <label for="question-text">Treść pytania:</label>
+                    <input id="question-text" @bind="newQuestionText" placeholder="Wpisz pytanie" />
+                 </div>
+                   <h4>Dodaj odpowiedzi</h4>
+                 <div>
+                            @foreach (var answer in newAnswers)
+                            {
+                                <div>
+                                    <input @bind="answer.Text" placeholder="Treść odpowiedzi" />
+                                    <input type="checkbox" @bind="answer.IsCorrect" /> Poprawna?
+                                </div>
+                            }
+                            <button class="questions-section-btn"  @onclick="AddNewAnswer">Dodaj odpowiedź</button>
+                         </div>
+                    <button class="questions-section-btn" @onclick="AddQuestion">Dodaj pytanie do quizu</button>
+                </div>
+            </div>
+            
+
             @if (showValidationMessage)
-{
-    <div class="validation-message">
-        <p>Wszystkie pola muszą być wypełnione!</p>
-    </div>
-}
+            {
+                <div class="validation-message">
+                    <p>Wszystkie pola muszą być wypełnione!</p>
+                    <p>Wymagane jest dodanie min jednego pytania.</p>
+                </div>
+            }
 
 
             <button class="add-quiz-button" @onclick="AddNewQuiz">Dodaj Quiz</button>
@@ -68,6 +115,34 @@
     private string newQuizDescription;
     private bool isModalOpen;
     private bool showValidationMessage = false;
+    private string newQuestionText;
+    private List<Answer> newAnswers = new();
+    private List<Question> newQuizQuestions = new(); 
+
+    private void AddNewAnswer()
+    {
+        newAnswers.Add(new Answer { Text = "", IsCorrect = false });
+    }
+
+private void AddQuestion()
+{
+    if (!string.IsNullOrWhiteSpace(newQuestionText) && newAnswers.Any())
+    {
+        var question = new Question
+        {
+            QuestionText = newQuestionText,
+        };
+
+        foreach (var answer in newAnswers)
+        {
+            question.Answers.Add(answer); 
+        }
+
+        newQuizQuestions.Add(question);
+        newQuestionText = string.Empty;
+        newAnswers = new();
+    }
+}
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,49 +156,52 @@
         quizzes = response.Quizzes.ToList();
     }
 
-private async Task AddNewQuiz()
-{
-    if (string.IsNullOrWhiteSpace(newQuizTitle) || string.IsNullOrWhiteSpace(newQuizDescription))
+    private async Task AddNewQuiz()
     {
-        // Jeśli tytuł lub opis jest pusty, ustaw komunikat o błędzie
-        showValidationMessage = true;
-        return;
+        if (string.IsNullOrWhiteSpace(newQuizTitle) || string.IsNullOrWhiteSpace(newQuizDescription) || newQuizQuestions.Count == 0)
+        {
+            showValidationMessage = true;
+            return;
+        }
+
+        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        {
+            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+        });
+
+        var client = new QuizService.QuizServiceClient(channel);
+
+        // Mapowanie pytań i odpowiedzi do modelu gRPC
+        var questionsList = newQuizQuestions.Select(q => new QuizApp.Question
+        {
+            QuestionText = q.QuestionText,
+            Answers = { q.Answers.Select(a => new QuizApp.Answer
+            {
+                Text = a.Text,
+                IsCorrect = a.IsCorrect
+            }) }
+        }).ToList();
+
+        var newQuizRequest = new AddQuizRequest
+        {
+            Title = newQuizTitle,
+            Description = newQuizDescription,
+            Questions = { questionsList }
+        };
+
+        var response = await client.AddQuizAsync(newQuizRequest);
+
+        // Odśwież listę quizów
+        var quizzesResponse = await client.GetQuizzesAsync(new Empty());
+        quizzes = quizzesResponse.Quizzes.ToList();
+
+        // Zresetowanie formularza i zamknięcie modala
+        newQuizTitle = string.Empty;
+        newQuizDescription = string.Empty;
+        newQuizQuestions.Clear();
+        showValidationMessage = false;
+        CloseModal();
     }
-
-    using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-    {
-        HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-    });
-
-    var client = new QuizService.QuizServiceClient(channel);
-
-    // Tworzymy nową listę pytań
-    var questionsList = new List<Question>();  // Pusta lista pytań na początek
-
-    // Tworzymy obiekt AddQuizRequest
-    var newQuizRequest = new AddQuizRequest
-    {
-        Title = newQuizTitle,
-        Description = newQuizDescription,
-        Questions = { questionsList } // Ustawiamy listę pytań
-    };
-
-    // Wysyłamy obiekt AddQuizRequest
-    var response = await client.AddQuizAsync(newQuizRequest);
-
-    // Odśwież listę quizów
-    var quizzesResponse = await client.GetQuizzesAsync(new Empty());
-    quizzes = quizzesResponse.Quizzes.ToList();
-
-    // Resetowanie pól i zamknięcie modala
-    newQuizTitle = string.Empty;
-    newQuizDescription = string.Empty;
-    showValidationMessage = false;
-    CloseModal();
-}
-
-
-
 
     private void OpenModal()
     {
@@ -219,7 +297,6 @@ private async Task AddNewQuiz()
         background-color: #0056b3;
     }
 
-    /* Modal styles */
     .modal {
         display: flex;
         justify-content: center;
@@ -276,4 +353,49 @@ private async Task AddNewQuiz()
         border-radius: 4px;
         margin-bottom: 10px;
     }
+
+       .question-container {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+
+    .question-container p {
+        margin: 0 0 10px 0;
+        font-weight: bold;
+    }
+
+    .question-container ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .question-container li {
+        margin-bottom: 5px;
+    }
+
+    .questions-section {
+        margin: 20px 0 30px 0;
+    }
+
+    .question {
+    margin-top: 10px;
+    border: 1px solid #28a745;
+    padding: 1rem;
+    border-radius: 6px;
+    }
+
+    .questions-section-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+
 </style>
