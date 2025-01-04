@@ -44,6 +44,7 @@ else
                 }
             </ul>
         }
+        <button class="create-game-button" @onclick="CreateGame">Utwórz grę</button>
     </div>
 }
 
@@ -76,4 +77,29 @@ else
             Console.WriteLine($"Błąd podczas ładowania szczegółów quizu: {ex.Message}");
         }
     }
+
+    private void CreateGame()
+    {
+        // Przykładowa logika przekierowania na stronę tworzenia gry:
+        NavigationManager.NavigateTo($"/game/{Id}");
+
+        // Możesz również dodać logikę wywołującą API gRPC lub inne działanie:
+        // Console.WriteLine($"Tworzenie gry na podstawie quizu o ID: {Id}");
+    }
 }
+
+    <style>
+        .create-game-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.create-game-button:hover {
+    background-color: #45a049;
+}
+
+        </style>
