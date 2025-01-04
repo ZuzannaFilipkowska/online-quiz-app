@@ -40,7 +40,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Tworzenie kana³u gRPC z obs³ug¹ HTTP/2 w przegl¹darce
+        // Tworzenie kana³u gRPC 
         using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
         {
             HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
@@ -49,7 +49,7 @@
         // Tworzenie klienta gRPC
         var client = new QuizService.QuizServiceClient(channel);
 
-        // Pobieranie aktywnych gier (wywo³anie metody GetActiveGames)
+        // Pobieranie aktywnych gier 
         var response = await client.GetActiveGamesAsync(new Empty());
         activeGames = response.Games.ToList();
     }

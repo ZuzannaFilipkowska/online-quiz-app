@@ -1,6 +1,7 @@
 ﻿@page "/"
 
 @using Grpc.Net.Client
+@using Grpc.Net.Client.Web
 @using QuizApp
 @inject NavigationManager NavigationManager
 
@@ -51,49 +52,46 @@
             </div>
 
             <div class="questions-section">
+                <h3>Pytania</h3>
                 <div>
-                    <h3>Pytania</h3>
+                    @if (newQuizQuestions.Count == 0)
+                    {
+                        <div class="no-quizzes-message">
+                            <p>Brak dodanych pytań.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul>
+                            @foreach (var question in newQuizQuestions)
+                            {
+                                <li>
+                                    <strong>@question.QuestionText</strong>
+                                </li>
+                            }
+                        </ul>
+                    }
                 </div>
-                <div>
-                      <h4>Dodane pytania</h4>
-                      <div>
 
-                             @if (newQuizQuestions.Count == 0)
-                                {
-                                    <div class="no-quizzes-message">
-                                        <p>Brak dodanych pytań.</p>
-                                    </div>
-                                }
-
-                          @foreach (var q in newQuizQuestions) {
-                          <div>
-                              <p>@q.QuestionText</p>
-                          </div>
-                          }
-                      </div>
-                 </div>
-                     <div class="question">
+                <div class="question">
                     <h4>Dodaj pytanie</h4>
-
-                    <div>
                     <label for="question-text">Treść pytania:</label>
                     <input id="question-text" @bind="newQuestionText" placeholder="Wpisz pytanie" />
-                 </div>
-                   <h4>Dodaj odpowiedzi</h4>
-                 <div>
-                            @foreach (var answer in newAnswers)
-                            {
-                                <div>
-                                    <input @bind="answer.Text" placeholder="Treść odpowiedzi" />
-                                    <input type="checkbox" @bind="answer.IsCorrect" /> Poprawna?
-                                </div>
-                            }
-                            <button class="questions-section-btn"  @onclick="AddNewAnswer">Dodaj odpowiedź</button>
-                         </div>
+
+                    <h4>Dodaj odpowiedzi</h4>
+                    <div>
+                        @foreach (var answer in newAnswers)
+                        {
+                            <div>
+                                <input @bind="answer.Text" placeholder="Treść odpowiedzi" />
+                                <input type="checkbox" @bind="answer.IsCorrect" /> Poprawna?
+                            </div>
+                        }
+                        <button class="questions-section-btn" @onclick="AddNewAnswer">Dodaj odpowiedź</button>
+                    </div>
                     <button class="questions-section-btn" @onclick="AddQuestion">Dodaj pytanie do quizu</button>
                 </div>
             </div>
-            
 
             @if (showValidationMessage)
             {
@@ -103,104 +101,121 @@
                 </div>
             }
 
-
             <button class="add-quiz-button" @onclick="AddNewQuiz">Dodaj Quiz</button>
         </div>
     </div>
 }
 
 @code {
-    private List<Quiz> quizzes;
-    private string newQuizTitle;
-    private string newQuizDescription;
-    private bool isModalOpen;
+    private List<Quiz> quizzes = new(); 
+    private string newQuizTitle = string.Empty;
+    private string newQuizDescription = string.Empty;
+    private bool isModalOpen = false;
     private bool showValidationMessage = false;
-    private string newQuestionText;
+    private string newQuestionText = string.Empty;
     private List<Answer> newAnswers = new();
-    private List<Question> newQuizQuestions = new(); 
+    private List<Question> newQuizQuestions = new();
 
     private void AddNewAnswer()
     {
-        newAnswers.Add(new Answer { Text = "", IsCorrect = false });
+        newAnswers.Add(new Answer { Text = string.Empty, IsCorrect = false });
     }
 
-private void AddQuestion()
-{
-    if (!string.IsNullOrWhiteSpace(newQuestionText) && newAnswers.Any())
+    private void AddQuestion()
     {
-        var question = new Question
+        if (!string.IsNullOrWhiteSpace(newQuestionText) && newAnswers.Any())
         {
-            QuestionText = newQuestionText,
-        };
+            var question = new Question
+            {
+                QuestionText = newQuestionText,
+                Answers = { newAnswers.Select(a => new Answer { Text = a.Text, IsCorrect = a.IsCorrect }) }
+            };
 
-        foreach (var answer in newAnswers)
-        {
-            question.Answers.Add(answer); 
+            newQuizQuestions.Add(question);
+            newQuestionText = string.Empty;
+            newAnswers.Clear();
         }
-
-        newQuizQuestions.Add(question);
-        newQuestionText = string.Empty;
-        newAnswers = new();
     }
-}
 
     protected override async Task OnInitializedAsync()
     {
-        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        try
         {
-            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-        });
+            using var channel = GrpcChannel.ForAddress("http://localhost:5195/", new GrpcChannelOptions
+            {
+                HttpHandler = new GrpcWebHandler(new HttpClientHandler())
+            });
 
-        var client = new QuizService.QuizServiceClient(channel);
-        var response = await client.GetQuizzesAsync(new Empty());
-        quizzes = response.Quizzes.ToList();
+            var client = new QuizService.QuizServiceClient(channel);
+            var response = await client.GetQuizzesAsync(new Empty());
+            quizzes = response.Quizzes.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd podczas ładowania quizów: {ex.Message}");
+        }
     }
 
     private async Task AddNewQuiz()
     {
-        if (string.IsNullOrWhiteSpace(newQuizTitle) || string.IsNullOrWhiteSpace(newQuizDescription) || newQuizQuestions.Count == 0)
+        if (string.IsNullOrWhiteSpace(newQuizTitle) || string.IsNullOrWhiteSpace(newQuizDescription) || !newQuizQuestions.Any())
         {
             showValidationMessage = true;
             return;
         }
 
-        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        try
         {
-            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-        });
-
-        var client = new QuizService.QuizServiceClient(channel);
-
-        // Mapowanie pytań i odpowiedzi do modelu gRPC
-        var questionsList = newQuizQuestions.Select(q => new QuizApp.Question
-        {
-            QuestionText = q.QuestionText,
-            Answers = { q.Answers.Select(a => new QuizApp.Answer
+            using var channel = GrpcChannel.ForAddress("http://localhost:5195/", new GrpcChannelOptions
             {
-                Text = a.Text,
-                IsCorrect = a.IsCorrect
-            }) }
-        }).ToList();
+                HttpHandler = new GrpcWebHandler(new HttpClientHandler())
+            });
 
-        var newQuizRequest = new AddQuizRequest
+            var client = new QuizService.QuizServiceClient(channel);
+
+            var newQuizRequest = new AddQuizRequest
+            {
+                Title = newQuizTitle,
+                Description = newQuizDescription,
+                Questions =
+                {
+                    newQuizQuestions.Select(q => new QuizApp.Question
+                    {
+                        QuestionText = q.QuestionText,
+                        Answers =
+                        {
+                            q.Answers.Select(a => new QuizApp.Answer
+                            {
+                                Text = a.Text,
+                                IsCorrect = a.IsCorrect
+                            })
+                        }
+                    })
+                }
+            };
+
+            await client.AddQuizAsync(newQuizRequest);
+
+            // Odświeżanie listy quizów
+            var quizzesResponse = await client.GetQuizzesAsync(new Empty());
+            quizzes = quizzesResponse.Quizzes.ToList();
+
+            ResetForm();
+        }
+        catch (Exception ex)
         {
-            Title = newQuizTitle,
-            Description = newQuizDescription,
-            Questions = { questionsList }
-        };
+            Console.WriteLine($"Błąd podczas dodawania nowego quizu: {ex.Message}");
+        }
+    }
 
-        var response = await client.AddQuizAsync(newQuizRequest);
-
-        // Odśwież listę quizów
-        var quizzesResponse = await client.GetQuizzesAsync(new Empty());
-        quizzes = quizzesResponse.Quizzes.ToList();
-
-        // Zresetowanie formularza i zamknięcie modala
+    private void ResetForm()
+    {
         newQuizTitle = string.Empty;
         newQuizDescription = string.Empty;
         newQuizQuestions.Clear();
+        newAnswers.Clear();
+        isModalOpen = false;
         showValidationMessage = false;
-        CloseModal();
     }
 
     private void OpenModal()
@@ -219,7 +234,7 @@ private void AddQuestion()
     }
 }
 
-<style>
+    <style>
     .quiz-list-container {
         margin: 20px auto;
         padding: 20px;

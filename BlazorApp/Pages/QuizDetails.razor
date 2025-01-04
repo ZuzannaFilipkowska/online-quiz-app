@@ -4,9 +4,9 @@
 @using QuizApp
 @inject NavigationManager NavigationManager
 
-<h3>Quiz Szczegóły</h3>
+<h3>Szczegóły Quizu</h3>
 
-@if (quiz == null || questions == null)
+@if (quiz == null)
 {
     <p><em>Ładowanie szczegółów quizu...</em></p>
 }
@@ -17,14 +17,14 @@ else
         <p><strong>Opis:</strong> @quiz.Description</p>
 
         <h5>Pytania:</h5>
-        @if (questions.Count == 0)
+        @if (quiz.Questions.Count == 0)
         {
             <p><em>Brak pytań w tym quizie.</em></p>
         }
         else
         {
             <ul>
-                @foreach (var question in questions)
+                @foreach (var question in quiz.Questions)
                 {
                     <li>
                         <p><strong>Pytanie:</strong> @question.QuestionText</p>
@@ -49,7 +49,6 @@ else
 
 @code {
     private Quiz quiz;
-    private List<Question> questions;
     [Parameter]
     public string? Id { get; set; }
 
@@ -57,7 +56,7 @@ else
     {
         try
         {
-            // Tworzenie kanału gRPC z obsługą HTTP/2 w przeglądarce
+            // Tworzenie kanału gRPC 
             using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
             {
                 HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
@@ -71,7 +70,6 @@ else
             var response = await client.GetQuizDetailsAsync(request);
 
             quiz = response.Quiz;
-            questions = response.Questions.ToList();
         }
         catch (Exception ex)
         {

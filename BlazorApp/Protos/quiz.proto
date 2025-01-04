@@ -5,19 +5,19 @@ option csharp_namespace = "QuizApp";
 service QuizService {
     // Pobiera listê quizów
     rpc GetQuizzes (Empty) returns (QuizzesResponse);
-    
+
     // Pobiera szczegó³y konkretnego quizu
     rpc GetQuizDetails (QuizRequest) returns (QuizDetailsResponse);
-    
+
     // Tworzy now¹ grê na podstawie quizu
     rpc CreateGame (QuizRequest) returns (GameResponse);
 
     // Pobiera szczegó³y konkretnej gry (np. pytania, uczestnicy, status gry)
     rpc GetGameDetails (GameRequest) returns (GameDetailsResponse);
-    
+
     // Rejestruje odpowiedŸ uczestnika
     rpc SubmitAnswer (AnswerRequest) returns (AnswerResponse);
-    
+
     // Pobiera wyniki koñcowe gry
     rpc GetGameResults (GameRequest) returns (GameResultsResponse);
 
@@ -28,7 +28,7 @@ service QuizService {
     rpc UpdateQuiz (UpdateQuizRequest) returns (QuizResponse);
 
     // Pobiera liste gier
-       rpc GetActiveGames (Empty) returns (ActiveGamesResponse);
+    rpc GetActiveGames (Empty) returns (ActiveGamesResponse);
 }
 
 message Empty {}
@@ -42,6 +42,7 @@ message Quiz {
     string title = 2;
     string description = 3;
     string creator_id = 4; // Id u¿ytkownika, który stworzy³ quiz
+    repeated Question questions = 5; 
 }
 
 message QuizRequest {
@@ -50,7 +51,6 @@ message QuizRequest {
 
 message QuizDetailsResponse {
     Quiz quiz = 1;
-    repeated Question questions = 2;
 }
 
 message Question {
@@ -108,7 +108,7 @@ message GameResultsResponse {
 message AddQuizRequest {
     string title = 1;
     string description = 2;
-    repeated Question questions = 3;
+    repeated Question questions = 3; 
 }
 
 message UpdateQuizRequest {
