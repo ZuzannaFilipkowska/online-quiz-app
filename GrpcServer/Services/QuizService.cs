@@ -118,29 +118,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return Task.FromResult(response);
     }
 
-    public override Task<QuizResponse> UpdateQuiz(UpdateQuizRequest request, ServerCallContext context)
-    {
-        // Find the quiz
-        var quiz = Quizzes.FirstOrDefault(q => q.Id == request.QuizId);
-        if (quiz == null)
-        {
-            throw new RpcException(new Status(StatusCode.NotFound, "Quiz not found"));
-        }
-
-        // Update quiz details
-        quiz.Title = request.Title;
-        quiz.Description = request.Description;
-        quiz.Questions.Clear();
-        quiz.Questions.AddRange(request.Questions);
-
-        var response = new QuizResponse
-        {
-            QuizId = quiz.Id,
-            Message = "Quiz successfully updated."
-        };
-        return Task.FromResult(response);
-    }
-
     public override Task<ActiveGamesResponse> GetActiveGames(Empty request, ServerCallContext context)
     {
         var response = new ActiveGamesResponse();

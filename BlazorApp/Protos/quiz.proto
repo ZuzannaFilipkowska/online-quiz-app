@@ -24,9 +24,6 @@ service QuizService {
     // Dodaje nowy quiz (dla nauczyciela)
     rpc AddQuiz (AddQuizRequest) returns (QuizResponse);
 
-    // Aktualizuje istniej¹cy quiz
-    rpc UpdateQuiz (UpdateQuizRequest) returns (QuizResponse);
-
     // Pobiera liste gier
     rpc GetActiveGames (Empty) returns (ActiveGamesResponse);
 }
@@ -42,7 +39,7 @@ message Quiz {
     string title = 2;
     string description = 3;
     string creator_id = 4; // Id u¿ytkownika, który stworzy³ quiz
-    repeated Question questions = 5; 
+    repeated Question questions = 5; // Lista pytañ powi¹zanych z quizem
 }
 
 message QuizRequest {
@@ -65,20 +62,29 @@ message Answer {
     bool is_correct = 3;
 }
 
-message GameResponse {
+message AddQuizRequest {
+    string title = 1;
+    string description = 2;
+    repeated Question questions = 3; 
+}
+
+
+message GameResponse { // create game response
     string game_id = 1;
     string message = 2;
 }
 
-message GameRequest {
+message GameRequest { // get game requet
     string game_id = 1;
 }
 
+
+// TODO: Do uporzadkowania zeby mialo pelne dane, kod gry itd
 message GameDetailsResponse {
     string game_id = 1;
     string status = 2; // np. "in_progress", "completed"
     repeated Player players = 3;
-    repeated Question questions = 4; // Lista pytañ i odpowiedzi 
+    repeated Question questions = 4; 
 }
 
 message Player {
@@ -86,6 +92,7 @@ message Player {
     string name = 2;
     int32 score = 3;
 }
+
 
 message AnswerRequest {
     string game_id = 1;
@@ -97,25 +104,12 @@ message AnswerRequest {
 message AnswerResponse {
     bool is_correct = 1;
     string message = 2;
-    int32 player_score = 3; // Aktualny wynik gracza
+    int32 player_score = 3; // Aktualny wynik gracza 
 }
 
 message GameResultsResponse {
     string game_id = 1;
     repeated Player players = 2; // Wyniki koñcowe graczy
-}
-
-message AddQuizRequest {
-    string title = 1;
-    string description = 2;
-    repeated Question questions = 3; 
-}
-
-message UpdateQuizRequest {
-    string quiz_id = 1;
-    string title = 2;
-    string description = 3;
-    repeated Question questions = 4;
 }
 
 message QuizResponse {
