@@ -73,6 +73,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         {
             GameId = "1",
             GameCode = "ABC123",
+            QuizId = "1",
             Status = "Oczekuj¹ca",
             Players = { }
         }
@@ -102,6 +103,15 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return Task.FromResult(response);
     }
 
+  
+
+    public override Task<ActiveGamesResponse> GetActiveGames(Empty request, ServerCallContext context)
+    {
+        var response = new ActiveGamesResponse();
+        response.Games.AddRange(Games);
+        return Task.FromResult(response);
+    }
+
     public override Task<GameResponse> CreateGame(CreateGameRequest request, ServerCallContext context)
     {
         var quiz = Quizzes.FirstOrDefault(q => q.Id == request.QuizId);
@@ -113,8 +123,10 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         var newGame = new Game
         {
             GameId = Guid.NewGuid().ToString(),
+            QuizId = request.QuizId,
             GameCode = Guid.NewGuid().ToString(),
-            Status = "Oczekuj¹ca"
+            Status = "Oczekuj¹ca",
+            Players = { },
         };
 
         Games.Add(newGame);
@@ -128,13 +140,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return Task.FromResult(response);
     }
 
-    public override Task<ActiveGamesResponse> GetActiveGames(Empty request, ServerCallContext context)
-    {
-        var response = new ActiveGamesResponse();
-        response.Games.AddRange(Games);
-        return Task.FromResult(response);
-    }
-
     public override Task<GameDetailsResponse> GetGameDetails(GameRequest request, ServerCallContext context)
     {
         var game = Games.FirstOrDefault(g => g.GameId == request.GameId);
@@ -143,27 +148,24 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-        var quiz = Quizzes.FirstOrDefault(q => Quizzes.Any(qz => qz.Id == game.QuizId));
-        var questions = quiz?.Questions;
+        var quiz = Quizzes.FirstOrDefault(q => q.Id == game.QuizId);
+        if (quiz == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Quiz not found"));
+        }
 
         var response = new GameDetailsResponse
         {
             GameId = game.GameId,
             Status = game.Status,
-            CurrentQuestionIndex = 0
+            Players = { game.Players },
+            Questions = { quiz.Questions },
+            CurrentQuestionIndex = 0 // nie wiem co to jest, wiêc ustawiam na 0
         };
 
-        if (game.Players != null)
-        {
-            response.Players.AddRange(game.Players);
-        }
-
-        //if (game.Questions != null)
-        //{
-        //    response.Questions.AddRange(game.Questions);
-        //}
         return Task.FromResult(response);
     }
+
 
     public override Task<AnswerResponse> SubmitAnswer(AnswerRequest request, ServerCallContext context)
     {
@@ -173,7 +175,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-        var quiz = Quizzes.FirstOrDefault(q => Quizzes.Any(qz => qz.Id == game.QuizId));
+        var quiz = Quizzes.FirstOrDefault(q => q.Id == game.QuizId);
         var questions = quiz?.Questions;
 
         var question = questions?.FirstOrDefault(q => q.Id == request.QuestionId);
