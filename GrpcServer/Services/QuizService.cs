@@ -68,16 +68,39 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     };
 
     private static readonly List<Game> Games = new()
+{
+    new Game
     {
-        new Game
+        GameId = "1",
+        GameCode = "ABC123",
+        QuizId = "1",
+        Status = "Oczekuj¹ca",
+        Players =
         {
-            GameId = "1",
-            GameCode = "ABC123",
-            QuizId = "1",
-            Status = "Oczekuj¹ca",
-            Players = { }
+            new Player
+            {
+                Id = "1",
+                Name = "Jan Kowalski",
+                Score = 0,
+                Answers = { }
+            },
+            new Player
+            {
+                Id = "2",
+                Name = "Piotr Nowak",
+                Score = 0,
+                Answers = { }
+            },
+            new Player
+            {
+                Id = "3",
+                Name = "Micha³ Zieliñski",
+                Score = 0,
+                Answers = { }
+            }
         }
-    };
+    }
+};
 
     private static readonly List<Player> Players = new();
 

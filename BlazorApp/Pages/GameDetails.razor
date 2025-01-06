@@ -15,6 +15,16 @@ else
         <h4>Id gry: @game_id</h4>
         <p><strong>Status:</strong> @status</p>
 
+        <h5>Gracze:</h5>
+        <ul>
+            @foreach (var player in players)
+            {
+                <li>
+                    @player.Name (@player.Score punktów)
+                </li>
+            }
+        </ul>
+
         @if (status == "Oczekuj¹ca")
         {
             <button class="start-game-button" @onclick="StartGame">Rozpocznij grê</button>
