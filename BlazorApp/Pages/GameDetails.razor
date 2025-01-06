@@ -1,0 +1,146 @@
+@page "/games/{id}"
+@using Grpc.Net.Client
+@using QuizApp
+@inject NavigationManager NavigationManager
+
+<h3>Gra</h3>
+
+@if (game_id == null)
+{
+    <p><em>£adowanie gry...</em></p>
+}
+else
+{
+    <div>
+        <h4>Id gry: @game_id</h4>
+        <p><strong>Status:</strong> @status</p>
+
+        @if (status == "Oczekuj¹ca")
+        {
+            <button class="start-game-button" @onclick="StartGame">Rozpocznij grê</button>
+        }
+        else if (status == "W toku")
+        {
+            @if (questions.Count == 0)
+            {
+                <p><em>Brak pytañ w tej grze.</em></p>
+            }
+            else
+            {
+                @foreach (var question in questions)
+                {
+                    <div>
+                        <p><strong>Pytanie:</strong> @question.QuestionText</p>
+                        <ul>
+                            @foreach (var answer in question.Answers)
+                            {
+                                <li>
+                                    @answer.Text
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        }
+        else if (status == "Zakoñczona")
+        {
+            <p><em>Gra zakoñczona.</em></p>
+            @*<button class="get-game-results-button" @onclick="GetGameResults">Poka¿ wyniki</button>*@
+        }
+    </div>
+}
+
+@code {
+    private string game_id;
+    private string status;
+    private List<Player> players = new List<Player>();
+    private int current_question_index;
+    private List<Question> questions = new List<Question>();
+    [Parameter]
+    public string? Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateGameDetails();
+    }
+
+    private async Task UpdateGameDetails()
+    {
+        try
+        {
+            // Tworzenie kana³u gRPC 
+            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+            {
+                HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+            });
+
+            // Tworzenie klienta gRPC
+            var client = new QuizService.QuizServiceClient(channel);
+
+            // Pobieranie gry
+            var request = new GameRequest { GameId = Id };
+            var response = await client.GetGameDetailsAsync(request);
+
+            game_id = response.GameId;
+            status = response.Status;
+            players = response.Players.ToList();
+            current_question_index = response.CurrentQuestionIndex;
+            questions = response.Questions.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"B³¹d podczas ³adowania gry: {ex.Message}");
+        }
+    }
+
+    private async Task StartGame()
+    {
+        try
+        {
+            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+            {
+                HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+            });
+
+            var client = new QuizService.QuizServiceClient(channel);
+
+            var request = new GameRequest { GameId = Id };
+            var response = await client.StartGameAsync(request);
+            await UpdateGameDetails();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"B³¹d podczas rozpoczynania gry: {ex.Message}");
+        }
+    }
+}
+
+
+<style>
+    .start-game-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    .start-game-button:hover {
+        background-color: #45a049;
+    }
+
+    .get-game-results-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    .get-game-results-button:hover {
+        background-color: #45a049;
+    }
+</style>

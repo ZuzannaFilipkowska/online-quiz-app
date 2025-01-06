@@ -14,6 +14,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             Id = "1",
             Title = "Quiz 1",
             Description = "Pierwszy quiz",
+            CreatorId = "1",
             Questions =
             {
                 new Question
@@ -47,6 +48,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             Id = "2",
             Title = "Quiz 2",
             Description = "Drugi quiz",
+            CreatorId = "1",
             Questions =
             {
                 new Question
@@ -64,6 +66,19 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             }
         }
     };
+
+    private static readonly List<Game> Games = new()
+    {
+        new Game
+        {
+            GameId = "1",
+            GameCode = "ABC123",
+            Status = "Oczekuj¹ca",
+            Players = { }
+        }
+    };
+
+    private static readonly List<Player> Players = new();
 
     public override Task<QuizzesResponse> GetQuizzes(Empty request, ServerCallContext context)
     {
@@ -87,6 +102,138 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return Task.FromResult(response);
     }
 
+    public override Task<GameResponse> CreateGame(CreateGameRequest request, ServerCallContext context)
+    {
+        var quiz = Quizzes.FirstOrDefault(q => q.Id == request.QuizId);
+        if (quiz == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Quiz not found"));
+        }
+
+        var newGame = new Game
+        {
+            GameId = Guid.NewGuid().ToString(),
+            GameCode = Guid.NewGuid().ToString(),
+            Status = "Oczekuj¹ca"
+        };
+
+        Games.Add(newGame);
+
+        var response = new GameResponse
+        {
+            GameId = newGame.GameId,
+            GameCode = newGame.GameCode,
+            Message = "Game created successfully"
+        };
+        return Task.FromResult(response);
+    }
+
+    public override Task<ActiveGamesResponse> GetActiveGames(Empty request, ServerCallContext context)
+    {
+        var response = new ActiveGamesResponse();
+        response.Games.AddRange(Games);
+        return Task.FromResult(response);
+    }
+
+    public override Task<GameDetailsResponse> GetGameDetails(GameRequest request, ServerCallContext context)
+    {
+        var game = Games.FirstOrDefault(g => g.GameId == request.GameId);
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        var quiz = Quizzes.FirstOrDefault(q => Quizzes.Any(qz => qz.Id == game.QuizId));
+        var questions = quiz?.Questions;
+
+        var response = new GameDetailsResponse
+        {
+            GameId = game.GameId,
+            Status = game.Status,
+            CurrentQuestionIndex = 0
+        };
+
+        if (game.Players != null)
+        {
+            response.Players.AddRange(game.Players);
+        }
+
+        //if (game.Questions != null)
+        //{
+        //    response.Questions.AddRange(game.Questions);
+        //}
+        return Task.FromResult(response);
+    }
+
+    public override Task<AnswerResponse> SubmitAnswer(AnswerRequest request, ServerCallContext context)
+    {
+        var game = Games.FirstOrDefault(g => g.GameId == request.GameId);
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        var quiz = Quizzes.FirstOrDefault(q => Quizzes.Any(qz => qz.Id == game.QuizId));
+        var questions = quiz?.Questions;
+
+        var question = questions?.FirstOrDefault(q => q.Id == request.QuestionId);
+        if (question == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Question not found"));
+        }
+
+        var answer = question.Answers.FirstOrDefault(a => a.Id == request.AnswerId);
+        if (answer == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Answer not found"));
+        }
+
+        var userAnswer = new AnswerSubmission
+        {
+            QuestionId = request.QuestionId,
+            AnswerId = request.AnswerId,
+            IsCorrect = answer.IsCorrect
+        };
+
+        Players.FirstOrDefault(p => p.Id == request.PlayerId)?.Answers.Add(userAnswer);
+
+        var response = new AnswerResponse
+        {
+            IsCorrect = answer.IsCorrect,
+            PlayerScore = Players.FirstOrDefault(p => p.Id == request.PlayerId)?.Score ?? 0,
+            Message = "Answer submitted successfully"
+        };
+        return Task.FromResult(response);
+    }
+
+    public override Task<JoinGameResponse> JoinGame(JoinGameRequest request, ServerCallContext context)
+    {
+        var game = Games.FirstOrDefault(g => g.GameCode == request.GameCode);
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        var newPlayer = new Player
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = request.PlayerName,
+            Score = 0,
+            Answers = { }
+        };
+
+        Players.Add(newPlayer);
+        game.Players.Add(newPlayer);
+
+        var response = new JoinGameResponse
+        {
+            GameId = game.GameId,
+            IsJoined = true,
+            Message = "Player joined the game successfully"
+        };
+        return Task.FromResult(response);
+    }
+
     public override Task<QuizResponse> AddQuiz(AddQuizRequest request, ServerCallContext context)
     {
         // Validate input
@@ -95,15 +242,12 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Title and description are required."));
         }
 
-        // Generate new quiz ID
-        var newQuizId = Guid.NewGuid().ToString();
-
-        // Create new quiz
         var newQuiz = new Quiz
         {
-            Id = newQuizId,
+            Id = Guid.NewGuid().ToString(),
             Title = request.Title,
             Description = request.Description,
+            CreatorId = "1",
             Questions = { request.Questions }
         };
 
@@ -112,37 +256,45 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
         var response = new QuizResponse
         {
-            QuizId = newQuizId,
+            QuizId = newQuiz.Id,
             Message = "Quiz successfully added."
         };
         return Task.FromResult(response);
     }
 
-    public override Task<ActiveGamesResponse> GetActiveGames(Empty request, ServerCallContext context)
+    public override Task<StartGameResponse> StartGame(GameRequest request, ServerCallContext context)
     {
-        var response = new ActiveGamesResponse();
-
-        response.Games.Add(new Game
+        var game = Games.FirstOrDefault(g => g.GameId == request.GameId);
+        if (game == null)
         {
-            GameId = "1",
-            GameCode = "ABC123",
-            Status = "W toku"
-        });
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
 
-        response.Games.Add(new Game
+        game.Status = "W toku";
+
+        var response = new StartGameResponse
         {
-            GameId = "2",
-            GameCode = "XYZ789",
-            Status = "Oczekuj¹ca"
-        });
+            IsStarted = true,
+            Message = "Game started successfully"
+        };
+        return Task.FromResult(response);
+    }
 
-        response.Games.Add(new Game
+    public override Task<GameResultsResponse> GetGameResults(GameRequest request, ServerCallContext context)
+    {
+        var game = Games.FirstOrDefault(g => g.GameId == request.GameId);
+        if (game == null)
         {
-            GameId = "3",
-            GameCode = "DEF456",
-            Status = "Zakoñczona"
-        });
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
 
+        var players = game.Players;
+
+        var response = new GameResultsResponse
+        {
+            GameId = game.GameId,
+            Players = { players }
+        };
         return Task.FromResult(response);
     }
 }

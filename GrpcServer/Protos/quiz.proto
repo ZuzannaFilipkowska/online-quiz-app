@@ -4,28 +4,34 @@ option csharp_namespace = "QuizApp";
 
 service QuizService {
     // Pobiera listê quizów
-    rpc GetQuizzes (Empty) returns (QuizzesResponse);
+    rpc GetQuizzes(Empty) returns (QuizzesResponse);
 
     // Pobiera szczegó³y konkretnego quizu
-    rpc GetQuizDetails (QuizRequest) returns (QuizDetailsResponse);
+    rpc GetQuizDetails(QuizRequest) returns (QuizDetailsResponse);
 
     // Tworzy now¹ grê na podstawie quizu
-    rpc CreateGame (QuizRequest) returns (GameResponse);
+    rpc CreateGame(CreateGameRequest) returns (GameResponse);
 
     // Pobiera szczegó³y konkretnej gry (np. pytania, uczestnicy, status gry)
-    rpc GetGameDetails (GameRequest) returns (GameDetailsResponse);
+    rpc GetGameDetails(GameRequest) returns (GameDetailsResponse);
 
     // Rejestruje odpowiedŸ uczestnika
-    rpc SubmitAnswer (AnswerRequest) returns (AnswerResponse);
+    rpc SubmitAnswer(AnswerRequest) returns (AnswerResponse);
 
     // Pobiera wyniki koñcowe gry
-    rpc GetGameResults (GameRequest) returns (GameResultsResponse);
+    rpc GetGameResults(GameRequest) returns (GameResultsResponse);
 
     // Dodaje nowy quiz (dla nauczyciela)
-    rpc AddQuiz (AddQuizRequest) returns (QuizResponse);
+    rpc AddQuiz(AddQuizRequest) returns (QuizResponse);
 
     // Pobiera liste gier
-    rpc GetActiveGames (Empty) returns (ActiveGamesResponse);
+    rpc GetActiveGames(Empty) returns (ActiveGamesResponse);
+
+    // Rozpoczyna grê
+    rpc StartGame(GameRequest) returns (StartGameResponse);
+
+    // Dodaje gracza do gry
+    rpc JoinGame(JoinGameRequest) returns (JoinGameResponse);
 }
 
 message Empty {}
@@ -68,31 +74,40 @@ message AddQuizRequest {
     repeated Question questions = 3; 
 }
 
+message CreateGameRequest {
+    string quiz_id = 1;
+}
 
 message GameResponse { // create game response
     string game_id = 1;
-    string message = 2;
+    string game_code = 2;
+    string message = 3;
 }
 
 message GameRequest { // get game requet
     string game_id = 1;
 }
 
-
-// TODO: Do uporzadkowania zeby mialo pelne dane, kod gry itd
 message GameDetailsResponse {
     string game_id = 1;
-    string status = 2; // np. "in_progress", "completed"
+    string status = 2; 
     repeated Player players = 3;
     repeated Question questions = 4; 
+    int32 current_question_index = 5;
 }
 
 message Player {
     string id = 1;
     string name = 2;
     int32 score = 3;
+    repeated AnswerSubmission answers = 4;
 }
 
+message AnswerSubmission {
+    string question_id = 1;
+    string answer_id = 2;
+    bool is_correct = 3;
+}
 
 message AnswerRequest {
     string game_id = 1;
@@ -124,5 +139,23 @@ message ActiveGamesResponse {
 message Game {
     string game_id = 1;
     string game_code = 2;
-    string status = 3; // np. "Oczekuj¹ca", "W toku", "Zakoñczona"
+    string quiz_id = 3;
+    string status = 4; // np. "Oczekuj¹ca", "W toku", "Zakoñczona"
+    repeated Player players = 5;
+}
+
+message StartGameResponse {
+    bool is_started = 1;
+    string message = 2;
+}
+
+message JoinGameRequest {
+    string game_code = 1;
+    string player_name = 2;
+}
+
+message JoinGameResponse {
+    string game_id = 1;
+    bool is_joined = 2;
+    string message = 3;
 }
