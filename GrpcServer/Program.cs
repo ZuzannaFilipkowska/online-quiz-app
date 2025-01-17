@@ -1,8 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using QuizApp;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddGrpc();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); 
+
 
 // Konfiguracja CORS
 builder.Services.AddCors(setupAction =>

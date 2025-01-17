@@ -1,5 +1,6 @@
 @page "/games/{id}"
 @using Grpc.Net.Client
+@using Grpc.Core.Utils;
 @using QuizApp
 @inject NavigationManager NavigationManager
 
@@ -12,18 +13,27 @@
 else
 {
     <div>
-        <h4>Id gry: @game_id</h4>
+        <h4>Kod do do³¹czenia do gry: @game_code</h4>
         <p><strong>Status:</strong> @status</p>
+        @if (status != "Zakoñczona") {
+              <h5>Gracze:</h5>
+      <ul>
+          @foreach (var player in players)
+          {
+              <li>
+                  <span>
+                  @player.Name (@player.Score pkt)
 
-        <h5>Gracze:</h5>
-        <ul>
-            @foreach (var player in players)
-            {
-                <li>
-                    @player.Name (@player.Score punktów)
-                </li>
-            }
-        </ul>
+                  </span>
+                              <button @onclick="() => SimulateAllAnswers(player.Id)" class="btn btn-primary">
+              Symuluj odpowiedzi
+          </button>
+              </li>
+          }
+      </ul>
+
+        }
+  
 
         @if (status == "Oczekuj¹ca")
         {
@@ -56,13 +66,33 @@ else
         else if (status == "Zakoñczona")
         {
             <p><em>Gra zakoñczona.</em></p>
-            @*<button class="get-game-results-button" @onclick="GetGameResults">Poka¿ wyniki</button>*@
+            <p>Wyniki:</p>
+
+        var sortedPlayers = players.OrderByDescending(p => p.Score).ToList();
+
+    // Wyœwietlanie posortowanych wyników
+    <ul>
+    @foreach (var player in sortedPlayers)
+    {
+        <li>@player.Name: @player.Score punktów</li>
+    }
+    </ul>
+
         }
+            
+        @if (status == "Oczekuj¹ca")
+    {
+ <div>
+    <button @onclick="AddPlayer">Dodaj testowego gracza</button>
+</div>
+    }
+        
     </div>
 }
 
 @code {
     private string game_id;
+    private string game_code;
     private string status;
     private List<Player> players = new List<Player>();
     private int current_question_index;
@@ -73,6 +103,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await UpdateGameDetails();
+        await SubscribeToGameUpdates();
     }
 
     private async Task UpdateGameDetails()
@@ -93,6 +124,7 @@ else
             var response = await client.GetGameDetailsAsync(request);
 
             game_id = response.GameId;
+            game_code = response.GameCode;
             status = response.Status;
             players = response.Players.ToList();
             current_question_index = response.CurrentQuestionIndex;
@@ -117,13 +149,124 @@ else
 
             var request = new GameRequest { GameId = Id };
             var response = await client.StartGameAsync(request);
-            await UpdateGameDetails();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"B³¹d podczas rozpoczynania gry: {ex.Message}");
         }
     }
+
+private async Task SubscribeToGameUpdates()
+{
+    try
+    {
+        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        {
+            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+        });
+
+        var client = new QuizService.QuizServiceClient(channel);
+
+        var request = new GameRequest { GameId = Id };
+        using var call = client.StreamGameUpdates(request);
+
+        // U¿yj domyœlnego tokena anulowania lub stwórz nowy
+        var cancellationToken = new CancellationToken();
+
+        while (await call.ResponseStream.MoveNext(cancellationToken))
+        {
+            var update = call.ResponseStream.Current;
+
+            // Aktualizuj dane gry na podstawie update
+            players = update.Players.ToList();
+            status = update.Status;
+
+            // Odœwie¿ interfejs u¿ytkownika
+            StateHasChanged();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"B³¹d podczas subskrypcji streamu: {ex.Message}");
+    }
+}
+
+
+   private async Task AddPlayer()
+{
+    try
+    {
+        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        {
+            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+        });
+
+        var client = new QuizService.QuizServiceClient(channel);
+
+        var joinGameRequest = new JoinGameRequest
+        {
+            GameCode = game_code, 
+            PlayerName = "Testowy Gracz" // Przyk³adowa nazwa gracza
+        };
+
+        var response = await client.JoinGameAsync(joinGameRequest);
+
+        // Obs³uga odpowiedzi
+        Console.WriteLine("Player added successfully.");
+    }
+    catch (Exception ex)
+    {
+        // Obs³uga b³êdów
+        Console.WriteLine($"Unexpected error: {ex.Message}");
+    }
+}
+
+
+ private async Task SimulateAllAnswers(string playerId)
+{
+    try
+    {
+        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+        {
+            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+        });
+
+        var client = new QuizService.QuizServiceClient(channel);
+
+        // Symulacja odpowiedzi gracza
+        foreach (var question in questions) // Zak³adam, ¿e masz listê 'questions' w komponencie
+        {
+            // Pobranie pierwszej odpowiedzi dla pytania
+            var firstAnswerId = question.Answers?.FirstOrDefault()?.Id;
+
+            if (firstAnswerId == null)
+            {
+                Console.WriteLine($"Brak dostêpnych odpowiedzi dla pytania {question.Id}. Pomijam.");
+                continue;
+            }
+
+            var request = new AnswerRequest
+            {
+                GameId = Id,
+                PlayerId = playerId,
+                QuestionId = question.Id,
+                AnswerId = firstAnswerId // Przypisanie pierwszego AnswerId
+            };
+
+            var response = await client.SubmitAnswerAsync(request);
+
+        }
+
+        Console.WriteLine("Symulacja odpowiedzi zakoñczona.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"B³¹d podczas symulacji odpowiedzi: {ex.Message}");
+    }
+}
+
+
+
 }
 
 

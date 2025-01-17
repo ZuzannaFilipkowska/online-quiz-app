@@ -15,6 +15,9 @@ service QuizService {
     // Pobiera szczegó³y konkretnej gry (np. pytania, uczestnicy, status gry)
     rpc GetGameDetails(GameRequest) returns (GameDetailsResponse);
 
+     // Stream z aktualizacjami gry
+     rpc StreamGameUpdates(GameRequest) returns (stream GameDetailsResponse);
+
     // Rejestruje odpowiedŸ uczestnika
     rpc SubmitAnswer(AnswerRequest) returns (AnswerResponse);
 
@@ -94,6 +97,7 @@ message GameDetailsResponse {
     repeated Player players = 3;
     repeated Question questions = 4; 
     int32 current_question_index = 5;
+    string game_code = 6;
 }
 
 message Player {

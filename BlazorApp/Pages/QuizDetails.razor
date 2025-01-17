@@ -78,14 +78,37 @@ else
         }
     }
 
-    private void CreateGame()
+  private async Task CreateGame()
+{
+    try
     {
-        // Przykładowa logika przekierowania na stronę tworzenia gry:
-        NavigationManager.NavigateTo($"/game/{Id}");
+       using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
+       {
+           HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
+       });
 
-        // Możesz również dodać logikę wywołującą API gRPC lub inne działanie:
-        // Console.WriteLine($"Tworzenie gry na podstawie quizu o ID: {Id}");
+       // Tworzenie klienta gRPC
+       var client = new QuizService.QuizServiceClient(channel);
+
+        // Call the backend to create a new game
+        var createGameRequest = new CreateGameRequest
+        {
+            QuizId = Id // Assuming `Id` is the Quiz ID for the game
+        };
+
+        var response = await client.CreateGameAsync(createGameRequest);
+
+        // Navigate to the new game page with the created game ID
+        NavigationManager.NavigateTo($"/games/{response.GameId}");
     }
+    catch (Exception ex)
+    {
+        // Handle any errors from the gRPC call
+        Console.WriteLine($"Error creating game: {ex.Message}");
+    }
+
+}
+
 }
 
     <style>
