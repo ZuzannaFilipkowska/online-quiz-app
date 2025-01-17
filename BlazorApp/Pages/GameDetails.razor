@@ -23,18 +23,15 @@ else
               <li>
                   <span>
                   @player.Name (@player.Score pkt)
-
                   </span>
-                              <button @onclick="() => SimulateAllAnswers(player.Id)" class="btn btn-primary">
-              Symuluj odpowiedzi
-          </button>
+                <button @onclick="() => SimulateAllAnswers(player.Id)" class="btn btn-primary">
+                    Symuluj odpowiedzi
+                </button>
               </li>
           }
       </ul>
-
         }
   
-
         @if (status == "Oczekuj¹ca")
         {
             <button class="start-game-button" @onclick="StartGame">Rozpocznij grê</button>
@@ -70,23 +67,20 @@ else
 
         var sortedPlayers = players.OrderByDescending(p => p.Score).ToList();
 
-    // Wyœwietlanie posortowanych wyników
     <ul>
     @foreach (var player in sortedPlayers)
     {
         <li>@player.Name: @player.Score punktów</li>
     }
     </ul>
-
         }
-            
+
         @if (status == "Oczekuj¹ca")
-    {
- <div>
-    <button @onclick="AddPlayer">Dodaj testowego gracza</button>
-</div>
-    }
-        
+        {
+     <div>
+        <button @onclick="AddPlayer">Dodaj testowego gracza</button>
+    </div>
+        }
     </div>
 }
 
@@ -169,15 +163,13 @@ private async Task SubscribeToGameUpdates()
 
         var request = new GameRequest { GameId = Id };
         using var call = client.StreamGameUpdates(request);
-
-        // U¿yj domyœlnego tokena anulowania lub stwórz nowy
         var cancellationToken = new CancellationToken();
 
         while (await call.ResponseStream.MoveNext(cancellationToken))
         {
             var update = call.ResponseStream.Current;
 
-            // Aktualizuj dane gry na podstawie update
+            // Aktualizuj dane gry
             players = update.Players.ToList();
             status = update.Status;
 
@@ -211,12 +203,10 @@ private async Task SubscribeToGameUpdates()
 
         var response = await client.JoinGameAsync(joinGameRequest);
 
-        // Obs³uga odpowiedzi
         Console.WriteLine("Player added successfully.");
     }
     catch (Exception ex)
     {
-        // Obs³uga b³êdów
         Console.WriteLine($"Unexpected error: {ex.Message}");
     }
 }
@@ -234,7 +224,7 @@ private async Task SubscribeToGameUpdates()
         var client = new QuizService.QuizServiceClient(channel);
 
         // Symulacja odpowiedzi gracza
-        foreach (var question in questions) // Zak³adam, ¿e masz listê 'questions' w komponencie
+        foreach (var question in questions) 
         {
             // Pobranie pierwszej odpowiedzi dla pytania
             var firstAnswerId = question.Answers?.FirstOrDefault()?.Id;
@@ -250,25 +240,18 @@ private async Task SubscribeToGameUpdates()
                 GameId = Id,
                 PlayerId = playerId,
                 QuestionId = question.Id,
-                AnswerId = firstAnswerId // Przypisanie pierwszego AnswerId
+                AnswerId = firstAnswerId 
             };
 
-            var response = await client.SubmitAnswerAsync(request);
-
+             await client.SubmitAnswerAsync(request);
         }
-
-        Console.WriteLine("Symulacja odpowiedzi zakoñczona.");
     }
     catch (Exception ex)
     {
         Console.WriteLine($"B³¹d podczas symulacji odpowiedzi: {ex.Message}");
     }
 }
-
-
-
 }
-
 
 <style>
     .start-game-button {

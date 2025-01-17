@@ -15,7 +15,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         _context = context;
     }
 
-
     public override async Task<QuizzesResponse> GetQuizzes(Empty request, ServerCallContext context)
     {
         var quizzes = await _context.Quizzes
@@ -127,7 +126,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             CreatorId = "1",
         };
 
-        // Use a transaction to ensure both the quiz and questions are saved together
         using (var transaction = await _context.Database.BeginTransactionAsync())
         {
             try
@@ -144,7 +142,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                     throw new RpcException(new Status(StatusCode.Internal, "Failed to retrieve the saved quiz."));
                 }
 
-                // Log the QuizId to check its value
                 Console.WriteLine($"Saved Quiz ID: {savedQuiz.Id}");
 
                 // Dodawanie pytañ i odpowiedzi do quizu
@@ -161,7 +158,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                         }).ToList()
                     };
 
-                    // Log the question and answers for debugging
                     Console.WriteLine($"Adding Question: {newQuestion.QuestionText}, QuizId: {newQuestion.QuizId}");
 
                     await _context.Questions.AddAsync(newQuestion);
@@ -169,11 +165,8 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Zapis pytañ i odpowiedzi w bazie danych
                 await _context.SaveChangesAsync();
-
-                // Commit transaction
                 await transaction.CommitAsync();
 
-                // Przygotowanie odpowiedzi
                 var response = new QuizResponse
                 {
                     QuizId = savedQuiz.Id,
@@ -184,7 +177,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             }
             catch (Exception ex)
             {
-                // Rollback transaction in case of error
                 await transaction.RollbackAsync();
                 Console.WriteLine($"Error while saving changes: {ex.Message}");
                 throw new RpcException(new Status(StatusCode.Internal, "Failed to save quiz and questions."));
@@ -223,7 +215,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     public override async Task<GameDetailsResponse> GetGameDetails(GameRequest request, ServerCallContext context)
     {
         var game = await _context.Games
-            .Include(g => g.Players) // Za³ó¿my, ¿e chcesz nadal do³¹czyæ graczy
+            .Include(g => g.Players) 
             .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
         if (game == null)
@@ -231,7 +223,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-        // Teraz pobieramy quiz na podstawie QuizId
         var quiz = await _context.Quizzes
             .Include(q => q.Questions)
                 .ThenInclude(q => q.Answers)
@@ -294,7 +285,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                 // Potwierdzenie transakcji
                 await transaction.CommitAsync();
 
-                // Przygotowanie odpowiedzi
                 var response = new StartGameResponse
                 {
                     IsStarted = true,
@@ -305,18 +295,14 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             }
             catch (Exception ex)
             {
-                // Logowanie ewentualnych b³êdów
                 Console.WriteLine($"Error starting game: {ex.Message}");
 
-                // Wycofanie transakcji w przypadku b³êdu
                 await transaction.RollbackAsync();
 
-                // Zg³oszenie wyj¹tku
                 throw new RpcException(new Status(StatusCode.Internal, "Error starting the game"));
             }
         }
     }
-
 
     public override async Task StreamGameUpdates(GameRequest request, IServerStreamWriter<GameDetailsResponse> responseStream, ServerCallContext context)
     {
@@ -331,22 +317,18 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-
-
-        // Streaming updates
         while (!context.CancellationToken.IsCancellationRequested)
         {
-            // Fetch the latest game details
             var updatedGame = await _context.Games
-                      .AsNoTracking()
-         .Include(g => g.Players)  // £aduje graczy
-        .ThenInclude(p => p.Answers)  // £aduje odpowiedzi graczy
-    .FirstOrDefaultAsync(g => g.GameId == request.GameId);
+                .AsNoTracking()
+                .Include(g => g.Players)  
+                .ThenInclude(p => p.Answers)  
+                .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
             var quiz = await _context.Quizzes
-          .Include(q => q.Questions) // Do³¹czamy pytania
-              .ThenInclude(q => q.Answers) // Do³¹czamy odpowiedzi
-          .FirstOrDefaultAsync(q => q.Id == game.QuizId);
+                .Include(q => q.Questions) 
+              .ThenInclude(q => q.Answers) 
+             .FirstOrDefaultAsync(q => q.Id == game.QuizId);
 
             if (updatedGame == null)
             {
@@ -371,7 +353,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             await responseStream.WriteAsync(response);
 
             // Introduce a delay to control update frequency
-            await Task.Delay(5000); // Adjust frequency as needed
+            await Task.Delay(5000); 
         }
     }
 
@@ -379,7 +361,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     {
         // Pobieranie gry z bazy danych na podstawie GameCode
         var game = await _context.Games
-            .Include(g => g.Players) // Do³¹czamy graczy
+            .Include(g => g.Players) 
             .FirstOrDefaultAsync(g => g.GameCode == request.GameCode);
 
         if (game == null)
@@ -402,7 +384,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         // Zapisanie zmian w bazie danych
         await _context.SaveChangesAsync();
 
-        // Przygotowanie odpowiedzi
         var response = new JoinGameResponse
         {
             GameId = game.GameId,
@@ -413,7 +394,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         return response;
     }
 
-
     public override async Task<AnswerResponse> SubmitAnswer(AnswerRequest request, ServerCallContext context)
     {
         // Pocz¹tek transakcji
@@ -423,9 +403,9 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             {
                 // Pobieranie gry z bazy danych na podstawie GameId
                 var game = await _context.Games
-                    .Include(g => g.Players)  // £aduje graczy
-                    .ThenInclude(p => p.Answers)  // £aduje odpowiedzi graczy
-                 .FirstOrDefaultAsync(g => g.GameId == request.GameId);
+                    .Include(g => g.Players)  
+                    .ThenInclude(p => p.Answers)  
+                     .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
                 if (game == null)
                 {
@@ -434,8 +414,8 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Pobieranie quizu z bazy danych na podstawie QuizId
                 var quiz = await _context.Quizzes
-                    .Include(q => q.Questions) // Do³¹czamy pytania
-                        .ThenInclude(q => q.Answers) // Do³¹czamy odpowiedzi
+                    .Include(q => q.Questions) 
+                     .ThenInclude(q => q.Answers) 
                     .FirstOrDefaultAsync(q => q.Id == game.QuizId);
 
                 if (quiz == null)
@@ -488,10 +468,10 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                 // Aktualizacja wyniku gracza
                 if (answer.IsCorrect)
                 {
-                    player.Score += 1; // Zak³adamy, ¿e poprawna odpowiedŸ to 1 punkt
+                    player.Score += 1; // Poprawna odpowiedŸ to 1 punkt
                 }
 
-                // Sprawdzanie, czy wszyscy gracze odpowiedzieli (pomijamy tego, który aktualnie odpowiada)
+                // Sprawdzanie, czy wszyscy gracze odpowiedzieli 
                 var allPlayersAnswered = game.Players
                     .Where(p => p.Id != request.PlayerId) // Pomijamy gracza, który aktualnie odpowiada
                     .All(p => p.Answers != null && p.Answers.Count == quiz.Questions.Count);
@@ -509,16 +489,12 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                 Console.WriteLine($"All players answered: {allPlayersAnswered}");
 
 
-                // Upewnij siê, ¿e status gry jest zmieniony w kontekœcie
+                // Upewnienie, ¿e status gry jest zmieniony w kontekœcie
                 _context.Entry(game).State = EntityState.Modified;
 
-                // Zapisanie zmian w bazie danych w ramach transakcji
                 await _context.SaveChangesAsync();
-
-                // Zatwierdzenie transakcji
                 await transaction.CommitAsync();
 
-                // Przygotowanie odpowiedzi
                 var response = new AnswerResponse
                 {
                     IsCorrect = answer.IsCorrect,
@@ -532,11 +508,10 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             {
                 // W przypadku b³êdu, rollback transakcji
                 await transaction.RollbackAsync();
-                throw; // Rzucenie wyj¹tku ponownie
+                throw; 
             }
         }
     }
-
 
     public override async Task<GameResultsResponse> GetGameResults(GameRequest request, ServerCallContext context)
     {
@@ -567,5 +542,4 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
         return response;
     }
-
 }
