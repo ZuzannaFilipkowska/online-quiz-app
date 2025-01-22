@@ -4,7 +4,6 @@
 @using QuizApp
 @inject NavigationManager NavigationManager
 
-<h3>Szczegóły Quizu</h3>
 
 @if (quiz == null)
 {
@@ -12,38 +11,47 @@
 }
 else
 {
-    <div>
-        <h4>@quiz.Title</h4>
+    <div class="quiz-details-questions">
+        <h3> Quiz: @quiz.Title</h3>
+
         <p><strong>Opis:</strong> @quiz.Description</p>
 
-        <h5>Pytania:</h5>
+        <div>
+                    <h5>Pytania:</h5>
         @if (quiz.Questions.Count == 0)
         {
             <p><em>Brak pytań w tym quizie.</em></p>
         }
         else
         {
+<ul >
+    @{
+        int questionNumber = 1; 
+    }
+    @foreach (var question in quiz.Questions)
+    {
+        <li>
+            <p><strong>Pytanie @questionNumber:</strong> @question.QuestionText</p>
             <ul>
-                @foreach (var question in quiz.Questions)
+                @foreach (var answer in question.Answers)
                 {
                     <li>
-                        <p><strong>Pytanie:</strong> @question.QuestionText</p>
-                        <ul>
-                            @foreach (var answer in question.Answers)
-                            {
-                                <li>
-                                    @if (answer.IsCorrect)
-                                    {
-                                        <span style="color: green;">✔ </span>
-                                    }
-                                    @answer.Text
-                                </li>
-                            }
-                        </ul>
+                        @answer.Text
+                        @if (answer.IsCorrect)
+                        {
+                            <span style="color: green;">✔ </span>
+                        }
                     </li>
                 }
             </ul>
+        </li>
+        questionNumber++;
+    }
+</ul>
+
         }
+        </div>
+
         <button class="create-game-button" @onclick="CreateGame">Utwórz grę</button>
     </div>
 }
@@ -123,6 +131,13 @@ else
 
 .create-game-button:hover {
     background-color: #45a049;
+}
+
+.quiz-details-questions {
+    padding: 1rem;
+    border-radius: 8px;
+    border: 2px solid #c3aeae;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2), 0px 6px 20px rgba(0, 0, 0, 0.19);
 }
 
         </style>

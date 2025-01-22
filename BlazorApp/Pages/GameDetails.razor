@@ -13,11 +13,17 @@
 else
 {
     <div>
-        <h4>Kod do do³¹czenia do gry: @game_code</h4>
-        <p><strong>Status:</strong> @status</p>
+        <h4 class="game-details-code">Kod  do do³¹czenia: @game_code</h4>
+        <p><strong>Status:</strong> <span  class="@GetStatusClass(status)">@status</span></p>
         @if (status != "Zakoñczona") {
               <h5>Gracze:</h5>
-      <ul>
+        @if (players == null || !players.Any())
+{
+    <p>Brak</p>
+}
+else
+{
+          <ul>
           @foreach (var player in players)
           {
               <li>
@@ -30,11 +36,21 @@ else
               </li>
           }
       </ul>
+}
+
         }
   
         @if (status == "Oczekuj¹ca")
         {
-            <button class="start-game-button" @onclick="StartGame">Rozpocznij grê</button>
+          @if (!players.Any())
+{
+    <p class="info-message">Dodaj graczy, aby móc rozpocz¹æ grê.</p>
+}
+
+<button class="start-game-button" @onclick="StartGame" disabled="@(players == null || !players.Any())">
+    Rozpocznij grê
+</button>
+
         }
         else if (status == "W toku")
         {
@@ -70,7 +86,7 @@ else
     <ul>
     @foreach (var player in sortedPlayers)
     {
-        <li>@player.Name: @player.Score punktów</li>
+        <li>@player.Name: @player.Score pkt</li>
     }
     </ul>
         }
@@ -98,6 +114,17 @@ else
     {
         await UpdateGameDetails();
         await SubscribeToGameUpdates();
+    }
+
+     private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Zakoñczona" => "status-success",
+            "W toku" => "status-inprogress",
+            "Oczekuj¹ca" => "status-waiting",
+            _ => "status-default"
+        };
     }
 
     private async Task UpdateGameDetails()
@@ -279,4 +306,29 @@ private async Task SubscribeToGameUpdates()
     .get-game-results-button:hover {
         background-color: #45a049;
     }
+
+    .game-details-code {
+        padding: 1.5rem;
+        margin: 2rem 0;
+        background: #f2e8cf;
+        border-radius: 8px;
+    }
+
+    .status-succes {
+    color: #386641;
+    font-weight: bold;
+}
+.status-inprogress {
+    color: #a7c957;
+    font-weight: bold;
+}
+.status-waiting {
+    color: #bc4749;
+    font-weight: bold;
+}
+.status-default {
+    color: gray;
+    font-weight: normal;
+}
+
 </style>
