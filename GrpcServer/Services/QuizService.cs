@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.Text.Json;
 
 public class QuizServiceImpl : QuizService.QuizServiceBase
 {
-       private readonly AppDbContext _context;
+    private readonly AppDbContext _context;
 
     public QuizServiceImpl(AppDbContext context)
     {
@@ -112,13 +113,13 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
     public override async Task<QuizResponse> AddQuiz(AddQuizRequest request, ServerCallContext context)
     {
-        // Walidacja wejœcia
+        // Walidacja wejï¿½cia
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Title and description are required."));
         }
 
-        // Tworzenie nowego quizu bez pytañ
+        // Tworzenie nowego quizu bez pytaï¿½
         var newQuiz = new DbQuiz
         {
             Title = request.Title,
@@ -144,7 +145,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 Console.WriteLine($"Saved Quiz ID: {savedQuiz.Id}");
 
-                // Dodawanie pytañ i odpowiedzi do quizu
+                // Dodawanie pytaï¿½ i odpowiedzi do quizu
                 foreach (var questionRequest in request.Questions)
                 {
                     var newQuestion = new DbQuestion
@@ -163,7 +164,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                     await _context.Questions.AddAsync(newQuestion);
                 }
 
-                // Zapis pytañ i odpowiedzi w bazie danych
+                // Zapis pytaï¿½ i odpowiedzi w bazie danych
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -197,7 +198,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             GameId = Guid.NewGuid().ToString(),
             GameCode = Guid.NewGuid().ToString(),
             QuizId = request.QuizId,
-            Status = "Oczekuj¹ca"
+            Status = "Oczekujï¿½ca"
         };
 
         _context.Games.Add(newGame);
@@ -215,7 +216,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     public override async Task<GameDetailsResponse> GetGameDetails(GameRequest request, ServerCallContext context)
     {
         var game = await _context.Games
-            .Include(g => g.Players) 
+            .Include(g => g.Players)
             .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
         if (game == null)
@@ -263,7 +264,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
     public override async Task<StartGameResponse> StartGame(GameRequest request, ServerCallContext context)
     {
-        // Rozpoczêcie transakcji
+        // Rozpoczï¿½cie transakcji
         using (var transaction = await _context.Database.BeginTransactionAsync())
         {
             try
@@ -284,6 +285,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Potwierdzenie transakcji
                 await transaction.CommitAsync();
+                game.CurrentQuestionIndex = 0;
 
                 var response = new StartGameResponse
                 {
@@ -321,13 +323,13 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
         {
             var updatedGame = await _context.Games
                 .AsNoTracking()
-                .Include(g => g.Players)  
-                .ThenInclude(p => p.Answers)  
+                .Include(g => g.Players)
+                .ThenInclude(p => p.Answers)
                 .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
             var quiz = await _context.Quizzes
-                .Include(q => q.Questions) 
-              .ThenInclude(q => q.Answers) 
+                .Include(q => q.Questions)
+              .ThenInclude(q => q.Answers)
              .FirstOrDefaultAsync(q => q.Id == game.QuizId);
 
             if (updatedGame == null)
@@ -353,7 +355,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             await responseStream.WriteAsync(response);
 
             // Introduce a delay to control update frequency
-            await Task.Delay(5000); 
+            await Task.Delay(5000);
         }
     }
 
@@ -361,13 +363,11 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     {
         // Pobieranie gry z bazy danych na podstawie GameCode
         var game = await _context.Games
-            .Include(g => g.Players) 
+            .Include(g => g.Players)
             .FirstOrDefaultAsync(g => g.GameCode == request.GameCode);
 
         if (game == null)
-        {
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
-        }
 
         // Tworzenie nowego gracza
         var newPlayer = new DbPlayer
@@ -396,15 +396,15 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
     public override async Task<AnswerResponse> SubmitAnswer(AnswerRequest request, ServerCallContext context)
     {
-        // Pocz¹tek transakcji
+        // Poczï¿½tek transakcji
         using (var transaction = await _context.Database.BeginTransactionAsync())
         {
             try
             {
                 // Pobieranie gry z bazy danych na podstawie GameId
                 var game = await _context.Games
-                    .Include(g => g.Players)  
-                    .ThenInclude(p => p.Answers)  
+                    .Include(g => g.Players)
+                    .ThenInclude(p => p.Answers)
                      .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
                 if (game == null)
@@ -414,8 +414,8 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Pobieranie quizu z bazy danych na podstawie QuizId
                 var quiz = await _context.Quizzes
-                    .Include(q => q.Questions) 
-                     .ThenInclude(q => q.Answers) 
+                    .Include(q => q.Questions)
+                     .ThenInclude(q => q.Answers)
                     .FirstOrDefaultAsync(q => q.Id == game.QuizId);
 
                 if (quiz == null)
@@ -453,10 +453,10 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                     IsCorrect = answer.IsCorrect
                 };
 
-                // Dodanie odpowiedzi do AnswerSubmissions, aby EF œledzi³ tê zmianê
+                // Dodanie odpowiedzi do AnswerSubmissions, aby EF ï¿½ledziï¿½ tï¿½ zmianï¿½
                 _context.AnswerSubmissions.Add(userAnswer);
 
-                // Upewnienie siê, ¿e Answers w Playerze jest inicjowane (jeœli nie istnieje)
+                // Upewnienie siï¿½, ï¿½e Answers w Playerze jest inicjowane (jeï¿½li nie istnieje)
                 if (player.Answers == null)
                 {
                     player.Answers = new List<DbAnswerSubmission>();
@@ -468,20 +468,20 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                 // Aktualizacja wyniku gracza
                 if (answer.IsCorrect)
                 {
-                    player.Score += 1; // Poprawna odpowiedŸ to 1 punkt
+                    player.Score += 1; // Poprawna odpowiedï¿½ to 1 punkt
                 }
 
                 // Sprawdzanie, czy wszyscy gracze odpowiedzieli 
                 var allPlayersAnswered = game.Players
-                    .Where(p => p.Id != request.PlayerId) // Pomijamy gracza, który aktualnie odpowiada
+                    .Where(p => p.Id != request.PlayerId) // Pomijamy gracza, ktï¿½ry aktualnie odpowiada
                     .All(p => p.Answers != null && p.Answers.Count == quiz.Questions.Count);
 
                 if (allPlayersAnswered && player.Answers.Count == quiz.Questions.Count)
                 {
-                    game.Status = "Zakoñczona";
+                    game.Status = "Zakoï¿½czona";
                 }
 
-             
+
                 foreach (var p in game.Players)
                 {
                     Console.WriteLine($"Player {p.Id} answers count: {p.Answers?.Count}");
@@ -489,7 +489,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
                 Console.WriteLine($"All players answered: {allPlayersAnswered}");
 
 
-                // Upewnienie, ¿e status gry jest zmieniony w kontekœcie
+                // Upewnienie, ï¿½e status gry jest zmieniony w kontekï¿½cie
                 _context.Entry(game).State = EntityState.Modified;
 
                 await _context.SaveChangesAsync();
@@ -506,9 +506,9 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             }
             catch (Exception)
             {
-                // W przypadku b³êdu, rollback transakcji
+                // W przypadku bï¿½ï¿½du, rollback transakcji
                 await transaction.RollbackAsync();
-                throw; 
+                throw;
             }
         }
     }
@@ -517,7 +517,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
     {
         // Pobranie gry z bazy danych na podstawie GameId
         var game = await _context.Games
-            .Include(g => g.Players) // Do³¹czenie graczy
+            .Include(g => g.Players) // Doï¿½ï¿½czenie graczy
             .FirstOrDefaultAsync(g => g.GameId == request.GameId);
 
         if (game == null)
@@ -525,7 +525,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-        // Mapowanie wyników graczy
+        // Mapowanie wynikï¿½w graczy
         var response = new GameResultsResponse
         {
             GameId = game.GameId,
@@ -542,4 +542,145 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
         return response;
     }
+
+    public override async Task<StartQuizResponse> StartQuiz(GameRequest request, ServerCallContext context)
+    {
+        var game = await _context.Games
+            .Include(g => g.Players)
+            .FirstOrDefaultAsync(g => g.GameId == request.GameId);
+
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        var quiz = await _context.Quizzes
+            .Include(q => q.Questions)
+            .FirstOrDefaultAsync(q => q.Id == game.QuizId);
+
+        if (quiz == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Quiz not found"));
+        }
+
+        // Ustaw pierwsze pytanie
+        game.CurrentQuestionIndex = 0;
+        game.Status = "W toku";
+
+        _context.Entry(game).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+
+        return new StartQuizResponse
+        {
+            IsStarted = true,
+            Message = "Quiz started successfully"
+        };
+    }
+
+    public override async Task NextQuestion(GameRequest request, IServerStreamWriter<QuestionResponse> responseStream, ServerCallContext context)
+    {
+        var game = await _context.Games
+            .Include(g => g.Players)
+            .FirstOrDefaultAsync(g => g.GameId == request.GameId);
+
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        var quiz = await _context.Quizzes
+            .Include(q => q.Questions)
+            .ThenInclude(q => q.Answers)
+            .FirstOrDefaultAsync(q => q.Id == game.QuizId);
+
+        if (quiz == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Quiz not found"));
+        }
+
+        while (!context.CancellationToken.IsCancellationRequested)
+        {
+            if (game.CurrentQuestionIndex >= quiz.Questions.Count)
+            {
+                await responseStream.WriteAsync(new QuestionResponse
+                {
+                    IsFinished = true,
+                    IsLastQuestion = true, // JeÅ¼eli to ostatnie pytanie
+                    QuestionText = "Quiz finished"
+                });
+                break;
+            }
+
+            var currentQuestion = quiz.Questions.ElementAt(game.CurrentQuestionIndex);
+
+            // Konwersja string na int dla QuestionId
+            int questionId;
+            if (!int.TryParse(currentQuestion.Id, out questionId))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid Question ID"));
+            }
+
+            // Tworzymy nowÄ… listÄ™ odpowiedzi (zamiast przypisania do Answers bezpoÅ›rednio)
+            var answers = currentQuestion.Answers.Select(a =>
+            {
+                int answerId;
+                if (!int.TryParse(a.Id, out answerId))
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid Answer ID"));
+                }
+
+                return new UserAnswer
+                {
+                    Id = answerId, // a.Id jest stringiem, konwertujemy na int
+                    Text = a.Text
+                };
+            }).ToList(); // Konwertujemy do List<UserAnswer>
+
+            var response = new QuestionResponse
+            {
+                QuestionId = questionId, // Konwertujemy string na int
+                QuestionText = currentQuestion.QuestionText,
+                IsFinished = false,
+                IsLastQuestion = game.CurrentQuestionIndex == quiz.Questions.Count - 1, // JeÅ¼eli to ostatnie pytanie
+                Answers = { answers } // Tutaj przypisujemy nowÄ… listÄ™ odpowiedzi
+            };
+
+            await responseStream.WriteAsync(response);
+
+            // Poczekaj na sygnaÅ‚ przejÅ›cia do nastÄ™pnego pytania
+            await Task.Delay(15000); // 15 sekund na pytanie
+
+            game.CurrentQuestionIndex++;
+            _context.Entry(game).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public override async Task WaitForGameStart(GameRequest request, IServerStreamWriter<StartGameResponse> responseStream, ServerCallContext context)
+    {
+        var game = await _context.Games.FirstOrDefaultAsync(g => g.GameId == request.GameId);
+
+        if (game == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
+        }
+
+        // PÄ™tla nasÅ‚uchujÄ…ca na zmianÄ™ statusu gry
+        while (!context.CancellationToken.IsCancellationRequested)
+        {
+            // Sprawdzanie co 1 sekundÄ™
+            await Task.Delay(1000);
+
+            // JeÅ›li gra ma status "W toku", wysyÅ‚amy sygnaÅ‚ do klienta
+            if (game.Status == "W toku")
+            {
+                await responseStream.WriteAsync(new StartGameResponse
+                {
+                    IsStarted = true
+                });
+                break;
+            }
+        }
+    }
+
 }

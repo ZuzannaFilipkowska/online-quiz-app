@@ -75,6 +75,9 @@ namespace GrpcServer.Migrations
                     b.Property<string>("GameId")
                         .HasColumnType("text");
 
+                    b.Property<int>("CurrentQuestionIndex")
+                        .HasColumnType("integer");
+
                     b.Property<string>("GameCode")
                         .IsRequired()
                         .HasColumnType("text");

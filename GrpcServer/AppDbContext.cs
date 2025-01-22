@@ -145,6 +145,7 @@ namespace QuizApp
         public string GameCode { get; set; }
         public string QuizId { get; set; }
         public string Status { get; set; }
+        public int CurrentQuestionIndex { get; set; }
         public ICollection<DbPlayer> Players { get; set; }
     }
 
@@ -158,6 +159,4 @@ namespace QuizApp
         public string GameId { get; set; }
         public ICollection<DbAnswerSubmission> Answers { get; set; }
     }
-
-  
 }
