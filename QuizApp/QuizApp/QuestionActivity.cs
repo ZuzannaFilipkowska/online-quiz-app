@@ -4,18 +4,18 @@ using Android.Widget;
 using Android.Views;
 using System.Threading.Tasks;
 using Android.Graphics;
-using Grpc.Core; // Dodaj to dla obsługi gRPC
 using System;
+using System.Collections.Generic;
 
 namespace QuizApp
 {
     [Activity(Label = "QuestionActivity", Theme = "@style/AppTheme.NoActionBar")]
     public class QuestionActivity : Activity
     {
-        private int _selectedAnswerId;
+        private string _selectedAnswerId;
         private LinearLayout _answersContainer;
         private QuizService.QuizServiceClient _grpcClient;
-        private int _currentQuestionId;
+        private string _currentQuestionId;
         private string _gameId;
         private string _playerId;
 
@@ -34,86 +34,94 @@ namespace QuizApp
             _grpcClient = GrpcClientProvider.Instance.GetClient();
 
             // Załaduj pytanie z serwera
-            LoadQuestionsFromStream();
+            Task.Run(async () => await LoadNextQuestion());
 
             // Obsługa przycisku przesyłania odpowiedzi
             var submitButton = FindViewById<Button>(Resource.Id.submit_button);
             submitButton.Click += (s, e) => SubmitAnswer();
         }
 
-        private async Task LoadQuestionsFromStream()
+        private async Task LoadNextQuestion()
         {
             try
             {
-                // Rozpocznij strumieniowe pobieranie pytań
-                using (var call = _grpcClient.NextQuestion(new GameRequest { GameId = _gameId }))
+                // Pobierz pytanie i odpowiedzi z serwera
+                var questionResponse = await _grpcClient.NextQuestionAsync(new GameRequest { GameId = _gameId });
+
+                RunOnUiThread(() =>
                 {
-                    // Odbierz pytania z serwera
-                    while (await call.ResponseStream.MoveNext())
+                    // Wyświetl pytanie
+                    var questionTextView = FindViewById<TextView>(Resource.Id.question_text);
+                    questionTextView.Text = questionResponse.QuestionText;
+
+                    // Wyczyść poprzednie odpowiedzi
+                    _answersContainer.RemoveAllViews();
+                    var letterToAnswerId = new Dictionary<char, string>();
+
+                    // Wyświetlenie odpowiedzi
+                    char currentLetter = 'A'; // Pierwsza litera
+                    foreach (var answer in questionResponse.Answers)
                     {
-                        var questionResponse = call.ResponseStream.Current;
+                        var answerView = LayoutInflater.From(this).Inflate(Resource.Layout.single_answer_view, _answersContainer, false);
 
-                        // Wyświetlenie pytania
-                        var questionTextView = FindViewById<TextView>(Resource.Id.question_text);
-                        questionTextView.Text = questionResponse.QuestionText;
+                        var letterText = answerView.FindViewById<TextView>(Resource.Id.answer_letter);
+                        var answerText = answerView.FindViewById<TextView>(Resource.Id.answer_text);
 
-                        // Wyczyść poprzednie odpowiedzi
-                        _answersContainer.RemoveAllViews();
+                        // Ustawienie litery i tekstu odpowiedzi
+                        letterText.Text = currentLetter.ToString();
+                        answerText.Text = string.IsNullOrEmpty(answer.Text) ? "Brak tekstu odpowiedzi" : answer.Text;
 
-                        // Wyświetlenie odpowiedzi
-                        foreach (var answer in questionResponse.Answers)
+                        // Zapisanie mapowania litery na ID odpowiedzi
+                        letterToAnswerId[currentLetter] = answer.Id;
+
+                        // Obsługa kliknięcia odpowiedzi
+                        answerView.Click += (s, e) =>
                         {
-                            var answerView = LayoutInflater.From(this).Inflate(Resource.Layout.single_answer_view, _answersContainer, false);
+                            HandleAnswerClick(answerView, answer.Id); // Tu używamy ID odpowiedzi
+                        };
 
-                            var letterText = answerView.FindViewById<TextView>(Resource.Id.answer_letter);
-                            var answerText = answerView.FindViewById<TextView>(Resource.Id.answer_text);
-
-                            letterText.Text = answer.Id.ToString();
-                            answerText.Text = answer.Text;
-
-                            answerView.Click += (s, e) => HandleAnswerClick(answerView, answer.Id);
-
-                            _answersContainer.AddView(answerView);
-                        }
-
-                        // Zapisz ID pytania
-                        _currentQuestionId = questionResponse.QuestionId;
-
-                        // Jeśli to ostatnie pytanie, przerwij strumień
-                        if (questionResponse.IsFinished)
-                        {
-                            break;
-                        }
-
-                        // Poczekaj na następne pytanie
-                        await Task.Delay(5000); // Czekaj 15 sekund na pytanie
+                        _answersContainer.AddView(answerView);
+                        currentLetter++; // Przejdź do kolejnej litery
                     }
-                }
+
+                    // Zapisz ID pytania
+                    _currentQuestionId = questionResponse.QuestionId;
+
+                    // Jeśli to ostatnie pytanie
+                    if (questionResponse.IsFinished)
+                    {
+                        Toast.MakeText(this, "Quiz finished!", ToastLength.Long).Show();
+                    }
+                });
             }
             catch (Exception e)
             {
-                Toast.MakeText(this, "Nie udało się załadować pytania.", ToastLength.Long).Show();
+                RunOnUiThread(() =>
+                {
+                    // Pokazanie komunikatu o błędzie, jeśli wystąpił problem podczas ładowania pytania
+                    Toast.MakeText(this, $"Nie udało się załadować pytania.\n {e.Message}", ToastLength.Long).Show();
+                });
             }
         }
 
-        private void HandleAnswerClick(View answerView, int answerId)
+        private void HandleAnswerClick(View answerView, string answerId)
         {
             // Reset zaznaczenia
             for (int i = 0; i < _answersContainer.ChildCount; i++)
             {
                 var child = _answersContainer.GetChildAt(i);
-                child.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Color.LightGray);
+                child.SetBackgroundColor(Color.LightGray); // Ustawienie koloru tła
             }
 
             // Zaznaczenie odpowiedzi
-            answerView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Color.LightBlue);
+            answerView.SetBackgroundColor(Color.LightBlue);
 
             _selectedAnswerId = answerId;
         }
 
         private async void SubmitAnswer()
         {
-            if (_selectedAnswerId == 0)
+            if (string.IsNullOrEmpty(_selectedAnswerId))
             {
                 Toast.MakeText(this, "Wybierz odpowiedź!", ToastLength.Short).Show();
                 return;
@@ -126,25 +134,32 @@ namespace QuizApp
                 {
                     GameId = _gameId,
                     PlayerId = _playerId,
-                    QuestionId = _currentQuestionId.ToString(),
-                    AnswerId = _selectedAnswerId.ToString()
+                    QuestionId = _currentQuestionId,
+                    AnswerId = _selectedAnswerId
                 };
 
                 // Wysłanie odpowiedzi do serwera
                 var response = await _grpcClient.SubmitAnswerAsync(request);
 
-                // Przejście do ekranu pośredniego
-                var intent = new Android.Content.Intent(this, typeof(IntermediateScreenActivity));
-                intent.PutExtra("isAnswerCorrect", response.IsCorrect);
-                intent.PutExtra("playerScore", response.PlayerScore);
+                RunOnUiThread(() =>
+                {
+                    // Przejście do ekranu pośredniego
+                    var intent = new Android.Content.Intent(this, typeof(IntermediateScreenActivity));
+                    intent.PutExtra("isAnswerCorrect", response.IsCorrect);
+                    intent.PutExtra("gameId", _gameId);
+                    intent.PutExtra("playerId", _playerId);
 
-                // Zakończenie aktywności
-                StartActivity(intent);
-                Finish();
+                    // Zakończenie aktywności
+                    StartActivity(intent);
+                    Finish();
+                });
             }
-            catch
+            catch (Exception e)
             {
-                Toast.MakeText(this, "Nie udało się przesłać odpowiedzi.", ToastLength.Long).Show();
+                RunOnUiThread(() =>
+                {
+                    Toast.MakeText(this, $"Nie udało się przesłać odpowiedzi.\n {e.Message}", ToastLength.Long).Show();
+                });
             }
         }
     }

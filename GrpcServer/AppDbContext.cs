@@ -156,6 +156,7 @@ namespace QuizApp
         public string Id { get; set; }
         public string Name { get; set; }
         public int Score { get; set; }
+        public bool HasAnswered { get; set; }
         public string GameId { get; set; }
         public ICollection<DbAnswerSubmission> Answers { get; set; }
     }

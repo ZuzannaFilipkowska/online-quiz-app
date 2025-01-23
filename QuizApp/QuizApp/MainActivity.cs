@@ -94,8 +94,13 @@ namespace QuizApp
 
                 if (response.IsJoined)
                 {
-                    Toast.MakeText(this, response.Message, ToastLength.Long).Show();
-                    NavigateToWaitingPage(response.GameId);
+                    //Toast.MakeText(this, response.Message, ToastLength.Long).Show();
+                    NavigateToWaitingPage(response.GameId,response.PlayerId);
+                }
+                else
+                {
+                    _joinError.Visibility = ViewStates.Visible;
+                    _joinError.Text = response.Message;
                 }
             }
             catch (Exception e)
@@ -105,10 +110,11 @@ namespace QuizApp
             }
         }
 
-        private void NavigateToWaitingPage(string gameId)
+        private void NavigateToWaitingPage(string gameId, string playerId)
         {
             var intent = new Intent(this, typeof(WaitingPageActivity));
-            intent.PutExtra("GameId", gameId);
+            intent.PutExtra("gameId", gameId);
+            intent.PutExtra("playerId", playerId);
             StartActivity(intent);
         }
 

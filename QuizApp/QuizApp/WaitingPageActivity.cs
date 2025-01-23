@@ -37,7 +37,8 @@ namespace QuizApp
             try
             {
                 var grpcClient = GrpcClientProvider.Instance.GetClient();
-                var gameId = Intent.GetStringExtra("GameId");
+                var gameId = Intent.GetStringExtra("gameId");
+                var playerId = Intent.GetStringExtra("playerId");
 
                 using var responseStream = grpcClient.WaitForGameStart(new GameRequest { GameId = gameId });
 
@@ -49,6 +50,8 @@ namespace QuizApp
                         {
                             Toast.MakeText(this, "Game started!", ToastLength.Long).Show();
                             var intent = new Intent(this, typeof(QuestionActivity));
+                            intent.PutExtra("gameId", gameId);
+                            intent.PutExtra("playerId", playerId);
                             StartActivity(intent);
                             Finish();
                         });

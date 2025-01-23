@@ -41,7 +41,7 @@ service QuizService {
     rpc StartQuiz(GameRequest) returns (StartQuizResponse);
 
     // Przechodzi do kolejnego pytania w grze i streamuje odpowiedź
-    rpc NextQuestion(GameRequest) returns (stream QuestionResponse);
+    rpc NextQuestion(GameRequest) returns (QuestionResponse);
 
     // Stream start signal to the client
     rpc WaitForGameStart(GameRequest) returns (stream StartGameResponse);
@@ -120,6 +120,7 @@ message GameDetailsResponse {
     repeated Question questions = 4;
     int32 current_question_index = 5;
     string game_code = 6;
+    bool all_players_answered = 7;
 }
 
 // Struktura gracza
@@ -127,7 +128,8 @@ message Player {
     string id = 1;
     string name = 2;
     int32 score = 3;
-    repeated AnswerSubmission answers = 4;
+    bool has_answered = 4;
+    repeated AnswerSubmission answers = 5;
 }
 
 // Struktura odpowiedzi gracza na pytanie
@@ -193,8 +195,9 @@ message JoinGameRequest {
 // Odpowiedź na żądanie dołączenia gracza
 message JoinGameResponse {
     string game_id = 1;
-    bool is_joined = 2;
-    string message = 3;
+    string player_id = 2;
+    bool is_joined = 3;
+    string message = 4;
 }
 
 // Odpowiedź na rozpoczęcie quizu
@@ -205,7 +208,7 @@ message StartQuizResponse {
 
 // Odpowiedź na żądanie pytania
 message QuestionResponse {
-    int32 question_id = 1;
+    string question_id = 1;
     string question_text = 2;
     repeated UserAnswer answers = 3;
     bool is_finished = 4;
@@ -214,7 +217,7 @@ message QuestionResponse {
 
 // Struktura odpowiedzi do pytania
 message UserAnswer {
-    int32 id = 1;
+    string id = 1;
     string text = 2;
 }
 
