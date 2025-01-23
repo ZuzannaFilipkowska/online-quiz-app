@@ -40,68 +40,76 @@
 {
     <div class="modal">
         <div class="modal-content">
-            <span class="close-button" @onclick="CloseModal">&times;</span>
-            <h3>Dodaj Nowy Quiz</h3>
             <div>
-                <label for="title">Tytuł:</label>
-                <input id="title" @bind="newQuizTitle" placeholder="Wpisz tytuł quizu" />
+                                    <span class="close-button" @onclick="CloseModal">&times;</span>
+<h3>Dodaj Nowy Quiz</h3>
             </div>
-            <div>
-                <label for="description">Opis:</label>
-                <textarea id="description" @bind="newQuizDescription" placeholder="Wpisz opis quizu"></textarea>
-            </div>
+                <div class="modal-body">
+                       
+          <div>
+              <label for="title">Tytuł:</label>
+              <input id="title" @bind="newQuizTitle" placeholder="Wpisz tytuł quizu" />
+          </div>
+          <div>
+              <label for="description">Opis:</label>
+              <textarea id="description" @bind="newQuizDescription" placeholder="Wpisz opis quizu"></textarea>
+          </div>
 
-            <div class="questions-section">
-                <h3>Pytania</h3>
-                <div>
-                    @if (newQuizQuestions.Count == 0)
-                    {
-                        <div class="no-quizzes-message">
-                            <p>Brak dodanych pytań.</p>
-                        </div>
-                    }
-                    else
-                    {
-                        <ul>
-                            @foreach (var question in newQuizQuestions)
-                            {
-                                <li>
-                                    <strong>@question.QuestionText</strong>
-                                </li>
-                            }
-                        </ul>
-                    }
+          <div class="questions-section">
+              <h3>Pytania</h3>
+              <div>
+                  @if (newQuizQuestions.Count == 0)
+                  {
+                      <div class="no-quizzes-message">
+                          <p>Brak dodanych pytań.</p>
+                      </div>
+                  }
+                  else
+                  {
+                      <ul>
+                          @foreach (var question in newQuizQuestions)
+                          {
+                              <li>
+                                  <strong>@question.QuestionText</strong>
+                              </li>
+                          }
+                      </ul>
+                  }
+              </div>
+
+              <div class="question">
+                  <h4>Dodaj pytanie</h4>
+                  <label for="question-text">Treść pytania:</label>
+                  <input id="question-text" @bind="newQuestionText" placeholder="Wpisz pytanie" />
+
+                  <h4>Dodaj odpowiedzi</h4>
+                  <div>
+                      @foreach (var answer in newAnswers)
+                      {
+                          <div>
+                              <input @bind="answer.Text" placeholder="Treść odpowiedzi" />
+                              <div class="modal-is-true">
+                                  Poprawna?
+                              <input type="checkbox" @bind="answer.IsCorrect" /> 
+                              </div>
+                          </div>
+                      }
+                      <button class="questions-section-btn" @onclick="AddNewAnswer">Dodaj odpowiedź</button>
+                  </div>
+                  <button class="questions-section-btn" @onclick="AddQuestion">Dodaj pytanie do quizu</button>
+              </div>
+          </div>
+
+          @if (showValidationMessage)
+          {
+              <div class="validation-message">
+                  <p>Wszystkie pola muszą być wypełnione!</p>
+                  <p>Wymagane jest dodanie min jednego pytania.</p>
+              </div>
+          }
+
+          <button class="add-quiz-button" @onclick="AddNewQuiz">Dodaj Quiz</button>
                 </div>
-
-                <div class="question">
-                    <h4>Dodaj pytanie</h4>
-                    <label for="question-text">Treść pytania:</label>
-                    <input id="question-text" @bind="newQuestionText" placeholder="Wpisz pytanie" />
-
-                    <h4>Dodaj odpowiedzi</h4>
-                    <div>
-                        @foreach (var answer in newAnswers)
-                        {
-                            <div>
-                                <input @bind="answer.Text" placeholder="Treść odpowiedzi" />
-                                <input type="checkbox" @bind="answer.IsCorrect" /> Poprawna?
-                            </div>
-                        }
-                        <button class="questions-section-btn" @onclick="AddNewAnswer">Dodaj odpowiedź</button>
-                    </div>
-                    <button class="questions-section-btn" @onclick="AddQuestion">Dodaj pytanie do quizu</button>
-                </div>
-            </div>
-
-            @if (showValidationMessage)
-            {
-                <div class="validation-message">
-                    <p>Wszystkie pola muszą być wypełnione!</p>
-                    <p>Wymagane jest dodanie min jednego pytania.</p>
-                </div>
-            }
-
-            <button class="add-quiz-button" @onclick="AddNewQuiz">Dodaj Quiz</button>
         </div>
     </div>
 }
@@ -329,8 +337,13 @@
         background-color: white;
         border-radius: 8px;
         padding: 20px;
-        width: 400px;
+        width: 500px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-body {
+        overflow-y: auto;
+        max-height: 90vh;
     }
 
     .close-button {
@@ -413,4 +426,9 @@
         margin-top: 15px;
     }
 
+    .modal-is-true {
+        display: flex;
+        gap: 1rem;
+    }
+    
 </style>

@@ -24,12 +24,13 @@
         <div class="games-list">
             @foreach (var game in activeGames)
             {
-                <div class="game-card">
-                    <h3>Gra: @game.GameId</h3>
-                    <p><strong>Status:</strong> @game.Status</p>
-                    <p><strong>Kod Gry:</strong> @game.GameCode</p>
-                    <button class="details-button" @onclick="() => ViewGameDetails(game.GameId)">Szczegó³y</button>
-                </div>
+            <div class="game-card">
+                <img src="@GetGameImage(game.Status)" alt="Game Status Icon" class="game-status-icon" />
+                <h3>Gra: @game.GameId</h3>
+                <p><strong>Status:</strong> @game.Status</p>
+                <p><strong>Kod Gry:</strong> @game.GameCode</p>
+                <button class="details-button" @onclick="() => ViewGameDetails(game.GameId)">Szczegó³y</button>
+            </div>
             }
         </div>
     }
@@ -53,6 +54,18 @@
         var response = await client.GetActiveGamesAsync(new Empty());
         activeGames = response.Games.ToList();
     }
+
+     private string GetGameImage(string status)
+    {
+        return status switch
+        {
+            "W toku" => "images/active-game.png",
+            "Oczekuj¹ca" => "images/waiting-game.png",
+            "Zakoñczona" => "images/finished-game.png",
+            _ => "images/default-game.png"
+        };
+    }
+
 
     private void ViewGameDetails(string gameId)
     {
@@ -96,6 +109,12 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         text-align: center;
     }
+
+    .game-status-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+}
 
     .game-card h3 {
         margin: 10px 0;
