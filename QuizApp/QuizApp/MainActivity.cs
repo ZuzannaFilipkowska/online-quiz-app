@@ -69,9 +69,6 @@ namespace QuizApp
 
         private async void OnJoin()
         {
-            var intent = new Intent(this, typeof(QuestionActivity));
-            StartActivity(intent);
-
             var gameCode = _gameCodeInput.Text;
             var nick = _nickInput.Text;
 

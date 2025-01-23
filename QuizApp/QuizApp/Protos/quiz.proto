@@ -218,17 +218,8 @@ message UserAnswer {
     string text = 2;
 }
 
-
-// Żądanie pobrania kolejnego pytania
-message GetNextQuestionRequest {}
-
 // Żądanie przesłania odpowiedzi na pytanie
 message SubmitAnswerRequest {
     int32 question_id = 1;
     string selected_answer = 2;
-}
-
-// Response message for the start of a game
-message StartGameResponse {
-    bool IsStarted = 1;
 }

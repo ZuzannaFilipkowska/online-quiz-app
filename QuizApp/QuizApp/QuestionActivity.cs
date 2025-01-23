@@ -4,8 +4,8 @@ using Android.Widget;
 using Android.Views;
 using System.Threading.Tasks;
 using Android.Graphics;
-using System.Collections.Generic;
 using Grpc.Core; // Dodaj to dla obsługi gRPC
+using System;
 
 namespace QuizApp
 {
@@ -90,7 +90,7 @@ namespace QuizApp
                     }
                 }
             }
-            catch
+            catch (Exception e)
             {
                 Toast.MakeText(this, "Nie udało się załadować pytania.", ToastLength.Long).Show();
             }

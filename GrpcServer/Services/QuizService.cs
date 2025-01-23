@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using System.Text.Json;
+using System.Diagnostics;
 
 public class QuizServiceImpl : QuizService.QuizServiceBase
 {
@@ -278,6 +279,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Aktualizacja statusu gry
                 game.Status = "W toku";
+                game.CurrentQuestionIndex = 0;
                 _context.Entry(game).State = EntityState.Modified;
 
                 // Zapisanie zmian w bazie danych
@@ -285,7 +287,6 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 // Potwierdzenie transakcji
                 await transaction.CommitAsync();
-                game.CurrentQuestionIndex = 0;
 
                 var response = new StartGameResponse
                 {
@@ -665,21 +666,38 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, "Game not found"));
         }
 
-        // Pętla nasłuchująca na zmianę statusu gry
-        while (!context.CancellationToken.IsCancellationRequested)
-        {
-            // Sprawdzanie co 1 sekundę
-            await Task.Delay(1000);
+        var timeout = TimeSpan.FromMinutes(5);
+        var stopwatch = Stopwatch.StartNew();
 
-            // Jeśli gra ma status "W toku", wysyłamy sygnał do klienta
-            if (game.Status == "W toku")
+        try
+        {
+            while (!context.CancellationToken.IsCancellationRequested)
             {
-                await responseStream.WriteAsync(new StartGameResponse
+                if (stopwatch.Elapsed > timeout)
                 {
-                    IsStarted = true
-                });
-                break;
+                    throw new RpcException(new Status(StatusCode.DeadlineExceeded, "Waiting for game start timed out."));
+                }
+
+                await Task.Delay(1000);
+                _context.Entry(game).Reload();
+
+                if (game.Status == "W toku")
+                {
+                    await responseStream.WriteAsync(new StartGameResponse
+                    {
+                        IsStarted = true
+                    });
+                    break;
+                }
             }
+        }
+        catch (TaskCanceledException)
+        {
+            // Bezpieczne zakończenie w przypadku anulowania
+        }
+        catch (Exception ex)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, $"Unexpected error: {ex.Message}"));
         }
     }
 

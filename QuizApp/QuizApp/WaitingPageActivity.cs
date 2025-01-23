@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Widget;
+using Grpc.Core;
 using Newtonsoft.Json;
 
 namespace QuizApp
@@ -41,17 +41,16 @@ namespace QuizApp
 
                 using var responseStream = grpcClient.WaitForGameStart(new GameRequest { GameId = gameId });
 
-                while (await responseStream.ResponseStream.MoveNext(_cancellationTokenSource.Token))
+                await foreach (var startGameResponse in responseStream.ResponseStream.ReadAllAsync(_cancellationTokenSource.Token))
                 {
-                    var startGameResponse = responseStream.ResponseStream.Current;
-
                     if (startGameResponse.IsStarted)
                     {
-                        // Game has started, fetch the first question
                         RunOnUiThread(() =>
                         {
                             Toast.MakeText(this, "Game started!", ToastLength.Long).Show();
-                            FetchFirstQuestion(gameId);
+                            var intent = new Intent(this, typeof(QuestionActivity));
+                            StartActivity(intent);
+                            Finish();
                         });
                         break;
                     }
@@ -66,35 +65,8 @@ namespace QuizApp
             }
         }
 
-        private async void FetchFirstQuestion(string gameId)
-        {
-            try
-            {
-                var grpcClient = GrpcClientProvider.Instance.GetClient();
-                var response = await grpcClient.NextQuestionAsync(new GameRequest { GameId = gameId, CurrentQuestionIndex = 0 });
-
-                // Navigate to the first question
-                RunOnUiThread(() =>
-                {
-                    var intent = new Intent(this, typeof(QuestionActivity));
-                    intent.PutExtra("QuestionText", response.QuestionText);
-                    intent.PutExtra("Answers", JsonConvert.SerializeObject(response.Answers));
-                    StartActivity(intent);
-                    Finish();
-                });
-            }
-            catch (Exception ex)
-            {
-                RunOnUiThread(() =>
-                {
-                    Toast.MakeText(this, $"Error fetching first question: {ex.Message}", ToastLength.Long).Show();
-                });
-            }
-        }
-
         protected override void OnDestroy()
         {
-            // Cancel the token to stop waiting when activity is destroyed
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();
             base.OnDestroy();
