@@ -199,7 +199,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
             GameId = Guid.NewGuid().ToString(),
             GameCode = Guid.NewGuid().ToString(),
             QuizId = request.QuizId,
-            Status = "Oczekuj�ca"
+            Status = "Oczekująca"
         };
 
         _context.Games.Add(newGame);
@@ -345,16 +345,24 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
             // Przekonwertuj ICollection na List<DbQuestion>, aby móc używać indeksowania
             var questionsList = quiz.Questions.ToList();
+            var allPlayersAnswered = false;
 
-            // Pobierz ID pytania na podstawie aktualnego indeksu
-            var currentQuestionId = questionsList[updatedGame.CurrentQuestionIndex - 1].Id;
+            if (updatedGame.CurrentQuestionIndex > 0 && updatedGame.CurrentQuestionIndex <= questionsList.Count)
+            {
+                var currentQuestionId = questionsList[updatedGame.CurrentQuestionIndex - 1].Id;
 
-            // Sprawdzenie, czy wszyscy gracze odpowiedzieli na dane pytanie
-            var allPlayersAnswered = game.Players
-                .All(p => _context.AnswerSubmissions
-                    .Any(answSubm => answSubm.PlayerId == p.Id && answSubm.QuestionId == currentQuestionId));
+                // Sprawdzenie, czy wszyscy gracze odpowiedzieli na dane pytanie
+                allPlayersAnswered = game.Players
+                    .All(p => _context.AnswerSubmissions
+                        .Any(answSubm => answSubm.PlayerId == p.Id && answSubm.QuestionId == currentQuestionId));
 
-            Console.WriteLine($"allPlayersAnswered: {allPlayersAnswered}, Type: {allPlayersAnswered.GetType()}");
+                Console.WriteLine($"allPlayersAnswered: {allPlayersAnswered}, Type: {allPlayersAnswered.GetType()}");
+            }
+            else
+            {
+                Console.WriteLine("CurrentQuestionIndex is out of range.");
+            }
+
 
             var response = new GameDetailsResponse
             {
@@ -530,7 +538,7 @@ public class QuizServiceImpl : QuizService.QuizServiceBase
 
                 if (allPlayersAnswered && player.Answers.Count == quiz.Questions.Count)
                 {
-                    game.Status = "Zako�czona";
+                    game.Status = "Zakończona";
                 }
 
                 foreach (var p in game.Players)

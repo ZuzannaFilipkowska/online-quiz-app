@@ -10,7 +10,7 @@
     @if (activeGames == null)
     {
         <div class="loading-message">
-            <p><em>£adowanie gier...</em></p>
+            <p><em>≈Åadowanie gier...</em></p>
         </div>
     }
     else if (activeGames.Count == 0)
@@ -29,7 +29,7 @@
                 <h3>Gra: @game.GameId</h3>
                 <p><strong>Status:</strong> @game.Status</p>
                 <p><strong>Kod Gry:</strong> @game.GameCode</p>
-                <button class="details-button" @onclick="() => ViewGameDetails(game.GameId)">SzczegÛ≥y</button>
+                <button class="details-button" @onclick="() => ViewGameDetails(game.GameId)">Szczeg√≥≈Çy</button>
             </div>
             }
         </div>
@@ -41,7 +41,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Tworzenie kana≥u gRPC 
+        // Tworzenie kana≈Çu gRPC 
         using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
         {
             HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
@@ -60,8 +60,8 @@
         return status switch
         {
             "W toku" => "images/active-game.png",
-            "Oczekujπca" => "images/waiting-game.png",
-            "ZakoÒczona" => "images/finished-game.png",
+            "OczekujƒÖca" => "images/waiting-game.png",
+            "Zako≈Ñczona" => "images/finished-game.png",
             _ => "images/default-game.png"
         };
     }
