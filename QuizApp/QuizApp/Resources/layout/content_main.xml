@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:showIn="@layout/activity_main"
+    android:layout_centerInParent="true"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginBottom="32dp"
+        android:elevation="5dp"
+        android:background="#EEEEEE"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/holo_red_dark"/>
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/stat_notify_error"
+            android:layout_margin="16dp"
+            android:tint="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/joinError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="16dp"
+            android:textStyle="bold"
+            android:text="@string/join_error_text" />
+    </LinearLayout>
+        
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginRight="16dp"
+        android:layout_marginLeft="16dp"
+        android:text="@string/start_page_description" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/gameCodeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="48dp"
+        android:layout_marginLeft="48dp"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:hint="@string/game_code_hint" />
+        
+    <TextView
+        android:id="@+id/gameCodeError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginRight="16dp"
+        android:layout_marginLeft="16dp"
+        android:textSize="11dp"
+        android:visibility="invisible"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="@string/game_code_error" />
+        
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/nickInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="48dp"
+        android:layout_marginLeft="48dp"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:hint="@string/nick_input_hint" />
+        
+    <TextView
+        android:id="@+id/nickError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginRight="16dp"
+        android:layout_marginLeft="16dp"
+        android:textSize="11dp"
+        android:visibility="invisible"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="@string/nick_error" />
+
+    <Button
+        android:id="@+id/joinButton"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/join_button_text"/>
+</LinearLayout>

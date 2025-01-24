@@ -2,117 +2,144 @@ syntax = "proto3";
 
 option csharp_namespace = "QuizApp";
 
+// Serwis QuizService
 service QuizService {
-    // Pobiera list� quiz�w
+    // Pobiera listę dostępnych quizów
     rpc GetQuizzes(Empty) returns (QuizzesResponse);
 
-    // Pobiera szczeg�y konkretnego quizu
+    // Pobiera szczegóły konkretnego quizu
     rpc GetQuizDetails(QuizRequest) returns (QuizDetailsResponse);
 
-    // Tworzy now� gr� na podstawie quizu
+    // Tworzy nową grę na podstawie wybranego quizu
     rpc CreateGame(CreateGameRequest) returns (GameResponse);
 
-    // Pobiera szczeg�y konkretnej gry (np. pytania, uczestnicy, status gry)
+    // Pobiera szczegóły konkretnej gry, takie jak pytania, uczestnicy i status gry
     rpc GetGameDetails(GameRequest) returns (GameDetailsResponse);
 
-     // Stream z aktualizacjami gry
-     rpc StreamGameUpdates(GameRequest) returns (stream GameDetailsResponse);
+    // Streamuje aktualizacje stanu gry w czasie rzeczywistym
+    rpc StreamGameUpdates(GameRequest) returns (stream GameDetailsResponse);
 
-    // Rejestruje odpowied� uczestnika
+    // Rejestruje odpowiedź uczestnika na pytanie
     rpc SubmitAnswer(AnswerRequest) returns (AnswerResponse);
 
-    // Pobiera wyniki ko�cowe gry
+    // Pobiera wyniki końcowe gry, zawierające listę uczestników i ich wyniki
     rpc GetGameResults(GameRequest) returns (GameResultsResponse);
 
-    // Dodaje nowy quiz (dla nauczyciela)
+    // Dodaje nowy quiz (dla nauczyciela lub administratora)
     rpc AddQuiz(AddQuizRequest) returns (QuizResponse);
 
-    // Pobiera liste gier
+    // Pobiera listę aktywnych gier
     rpc GetActiveGames(Empty) returns (ActiveGamesResponse);
 
-    // Rozpoczyna gr�
+    // Rozpoczyna grę na podstawie jej ID
     rpc StartGame(GameRequest) returns (StartGameResponse);
 
-    // Dodaje gracza do gry
+    // Dodaje gracza do gry na podstawie kodu gry
     rpc JoinGame(JoinGameRequest) returns (JoinGameResponse);
+
+    // Rozpoczyna quiz w kontekście gry
+    rpc StartQuiz(GameRequest) returns (StartQuizResponse);
+
+    // Przechodzi do kolejnego pytania w grze i streamuje odpowiedź
+    rpc NextQuestion(GameRequest) returns (QuestionResponse);
+
+    // Stream start signal to the client
+    rpc WaitForGameStart(GameRequest) returns (stream StartGameResponse);
 }
 
+// Pusta wiadomość, używana w żądaniach, które nie wymagają parametrów wejściowych
 message Empty {}
 
+// Odpowiedź zawierająca listę quizów
 message QuizzesResponse {
     repeated Quiz quizzes = 1;
 }
 
+// Struktura quizu
 message Quiz {
     string id = 1;
     string title = 2;
     string description = 3;
-    string creator_id = 4; // Id u�ytkownika, kt�ry stworzy� quiz
-    repeated Question questions = 5; // Lista pyta� powi�zanych z quizem
+    string creator_id = 4;
+    repeated Question questions = 5;
 }
 
+// Żądanie szczegółów konkretnego quizu
 message QuizRequest {
     string quiz_id = 1;
 }
 
+// Odpowiedź zawierająca szczegóły quizu
 message QuizDetailsResponse {
     Quiz quiz = 1;
 }
 
+// Struktura pytania
 message Question {
     string id = 1;
     string question_text = 2;
     repeated Answer answers = 3;
 }
 
+// Struktura odpowiedzi na pytanie
 message Answer {
     string id = 1;
     string text = 2;
     bool is_correct = 3;
 }
 
+// Żądanie dodania nowego quizu
 message AddQuizRequest {
     string title = 1;
     string description = 2;
-    repeated Question questions = 3; 
+    repeated Question questions = 3;
 }
 
+// Żądanie utworzenia nowej gry
 message CreateGameRequest {
     string quiz_id = 1;
 }
 
-message GameResponse { // create game response
+// Odpowiedź na żądanie utworzenia gry
+message GameResponse {
     string game_id = 1;
     string game_code = 2;
     string message = 3;
 }
 
-message GameRequest { // get game requet
+// Żądanie szczegółów gry na podstawie jej ID
+message GameRequest {
     string game_id = 1;
 }
 
+// Odpowiedź zawierająca szczegóły gry
 message GameDetailsResponse {
     string game_id = 1;
-    string status = 2; 
+    string status = 2;
     repeated Player players = 3;
-    repeated Question questions = 4; 
+    repeated Question questions = 4;
     int32 current_question_index = 5;
     string game_code = 6;
+    bool all_players_answered = 7;
 }
 
+// Struktura gracza
 message Player {
     string id = 1;
     string name = 2;
     int32 score = 3;
-    repeated AnswerSubmission answers = 4;
+    bool has_answered = 4;
+    repeated AnswerSubmission answers = 5;
 }
 
+// Struktura odpowiedzi gracza na pytanie
 message AnswerSubmission {
     string question_id = 1;
     string answer_id = 2;
     bool is_correct = 3;
 }
 
+// Żądanie przesłania odpowiedzi na pytanie
 message AnswerRequest {
     string game_id = 1;
     string player_id = 2;
@@ -120,46 +147,82 @@ message AnswerRequest {
     string answer_id = 4;
 }
 
+// Odpowiedź na przesłanie odpowiedzi
 message AnswerResponse {
     bool is_correct = 1;
     string message = 2;
-    int32 player_score = 3; // Aktualny wynik gracza 
+    int32 player_score = 3;
 }
 
+// Odpowiedź zawierająca wyniki końcowe gry
 message GameResultsResponse {
     string game_id = 1;
-    repeated Player players = 2; // Wyniki ko�cowe graczy
+    repeated Player players = 2;
 }
 
+// Odpowiedź zawierająca szczegóły dodanego quizu
 message QuizResponse {
     string quiz_id = 1;
     string message = 2;
 }
 
+// Odpowiedź zawierająca listę aktywnych gier
 message ActiveGamesResponse {
     repeated Game games = 1;
 }
 
+// Struktura gry
 message Game {
     string game_id = 1;
     string game_code = 2;
     string quiz_id = 3;
-    string status = 4; // np. "Oczekuj�ca", "W toku", "Zako�czona"
+    string status = 4;
     repeated Player players = 5;
 }
 
+// Odpowiedź na rozpoczęcie gry
 message StartGameResponse {
     bool is_started = 1;
     string message = 2;
 }
 
+// Żądanie dołączenia gracza do gry
 message JoinGameRequest {
     string game_code = 1;
     string player_name = 2;
 }
 
+// Odpowiedź na żądanie dołączenia gracza
 message JoinGameResponse {
     string game_id = 1;
-    bool is_joined = 2;
-    string message = 3;
+    string player_id = 2;
+    bool is_joined = 3;
+    string message = 4;
+}
+
+// Odpowiedź na rozpoczęcie quizu
+message StartQuizResponse {
+    bool is_started = 1;
+    string message = 2;
+}
+
+// Odpowiedź na żądanie pytania
+message QuestionResponse {
+    string question_id = 1;
+    string question_text = 2;
+    repeated UserAnswer answers = 3;
+    bool is_finished = 4;
+    bool is_last_question = 5;
+}
+
+// Struktura odpowiedzi do pytania
+message UserAnswer {
+    string id = 1;
+    string text = 2;
+}
+
+// Żądanie przesłania odpowiedzi na pytanie
+message SubmitAnswerRequest {
+    int32 question_id = 1;
+    string selected_answer = 2;
 }

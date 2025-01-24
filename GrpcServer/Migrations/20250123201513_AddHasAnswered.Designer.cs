@@ -11,8 +11,8 @@ using QuizApp;
 namespace GrpcServer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250116220753_Update")]
-    partial class Update
+    [Migration("20250123201513_AddHasAnswered")]
+    partial class AddHasAnswered
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,36 +24,12 @@ namespace GrpcServer.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("QuizApp.Answer", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsCorrect")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("QuestionId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Text")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QuestionId");
-
-                    b.ToTable("Answer");
-                });
-
             modelBuilder.Entity("QuizApp.DbAnswer", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
-                    b.Property<string>("DbQuestionId")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsCorrect")
                         .HasColumnType("boolean");
 
@@ -67,7 +43,7 @@ namespace GrpcServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DbQuestionId");
+                    b.HasIndex("QuestionId");
 
                     b.ToTable("Answers");
                 });
@@ -90,6 +66,8 @@ namespace GrpcServer.Migrations
 
                     b.HasKey("QuestionId", "PlayerId");
 
+                    b.HasIndex("AnswerId");
+
                     b.HasIndex("PlayerId");
 
                     b.ToTable("AnswerSubmissions");
@@ -99,6 +77,9 @@ namespace GrpcServer.Migrations
                 {
                     b.Property<string>("GameId")
                         .HasColumnType("text");
+
+                    b.Property<int>("CurrentQuestionIndex")
+                        .HasColumnType("integer");
 
                     b.Property<string>("GameCode")
                         .IsRequired()
@@ -127,6 +108,9 @@ namespace GrpcServer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("HasAnswered")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -147,9 +131,6 @@ namespace GrpcServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
-                    b.Property<string>("DbQuizId")
-                        .HasColumnType("text");
-
                     b.Property<string>("QuestionText")
                         .IsRequired()
                         .HasColumnType("text");
@@ -159,8 +140,6 @@ namespace GrpcServer.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DbQuizId");
 
                     b.HasIndex("QuizId");
 
@@ -190,64 +169,42 @@ namespace GrpcServer.Migrations
                     b.ToTable("Quizzes");
                 });
 
-            modelBuilder.Entity("QuizApp.Question", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("QuestionText")
-                        .HasColumnType("text");
-
-                    b.Property<string>("QuizId")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QuizId");
-
-                    b.ToTable("Question");
-                });
-
-            modelBuilder.Entity("QuizApp.Quiz", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CreatorId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Quiz");
-                });
-
-            modelBuilder.Entity("QuizApp.Answer", b =>
-                {
-                    b.HasOne("QuizApp.Question", null)
-                        .WithMany("Answers")
-                        .HasForeignKey("QuestionId");
-                });
-
             modelBuilder.Entity("QuizApp.DbAnswer", b =>
                 {
-                    b.HasOne("QuizApp.DbQuestion", null)
+                    b.HasOne("QuizApp.DbQuestion", "Question")
                         .WithMany("Answers")
-                        .HasForeignKey("DbQuestionId");
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("QuizApp.DbAnswerSubmission", b =>
                 {
-                    b.HasOne("QuizApp.DbPlayer", null)
+                    b.HasOne("QuizApp.DbAnswer", "Answer")
+                        .WithMany()
+                        .HasForeignKey("AnswerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuizApp.DbPlayer", "Player")
                         .WithMany("Answers")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("QuizApp.DbQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Answer");
+
+                    b.Navigation("Player");
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("QuizApp.DbPlayer", b =>
@@ -261,24 +218,13 @@ namespace GrpcServer.Migrations
 
             modelBuilder.Entity("QuizApp.DbQuestion", b =>
                 {
-                    b.HasOne("QuizApp.DbQuiz", null)
+                    b.HasOne("QuizApp.DbQuiz", "Quiz")
                         .WithMany("Questions")
-                        .HasForeignKey("DbQuizId");
-
-                    b.HasOne("QuizApp.Quiz", "Quiz")
-                        .WithMany()
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Quiz");
-                });
-
-            modelBuilder.Entity("QuizApp.Question", b =>
-                {
-                    b.HasOne("QuizApp.Quiz", null)
-                        .WithMany("Questions")
-                        .HasForeignKey("QuizId");
                 });
 
             modelBuilder.Entity("QuizApp.DbGame", b =>
@@ -297,16 +243,6 @@ namespace GrpcServer.Migrations
                 });
 
             modelBuilder.Entity("QuizApp.DbQuiz", b =>
-                {
-                    b.Navigation("Questions");
-                });
-
-            modelBuilder.Entity("QuizApp.Question", b =>
-                {
-                    b.Navigation("Answers");
-                });
-
-            modelBuilder.Entity("QuizApp.Quiz", b =>
                 {
                     b.Navigation("Questions");
                 });

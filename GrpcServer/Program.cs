@@ -16,21 +16,21 @@ builder.Services.AddCors(setupAction =>
     setupAction.AddPolicy("AllowLocalhost", policy =>
     {
         policy.AllowAnyHeader()
-              .WithOrigins("http://localhost:5025")
-              .AllowAnyMethod()  // Zezwala na dowoln¹ metodê HTTP
-              .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding"); // Nag³ówki specyficzne dla gRPC
+              .AllowAnyOrigin()
+              .AllowAnyMethod()  // Zezwala na dowolnï¿½ metodï¿½ HTTP
+              .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding"); // Nagï¿½ï¿½wki specyficzne dla gRPC
     });
 });
 
 var app = builder.Build();
 
-// U¿ycie CORS w aplikacji
+// Uï¿½ycie CORS w aplikacji
 app.UseCors("AllowLocalhost");
 
 // Konfiguracja tras
 app.UseRouting();
 
-// Konfiguracja gRPC Web (jeœli chcesz umo¿liwiæ komunikacjê z gRPC za pomoc¹ HTTP/1)
+// Konfiguracja gRPC Web (jeï¿½li chcesz umoï¿½liwiï¿½ komunikacjï¿½ z gRPC za pomocï¿½ HTTP/1)
 app.UseGrpcWeb(new GrpcWebOptions
 {
     DefaultEnabled = true
@@ -39,7 +39,7 @@ app.UseGrpcWeb(new GrpcWebOptions
 // Endpointy dla gRPC
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapGrpcService<QuizServiceImpl>();
+    endpoints.MapGrpcService<QuizServiceImpl>().EnableGrpcWeb();
 });
 
 app.Run();

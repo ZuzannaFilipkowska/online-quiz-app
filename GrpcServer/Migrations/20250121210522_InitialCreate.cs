@@ -17,7 +17,8 @@ namespace GrpcServer.Migrations
                     GameId = table.Column<string>(type: "text", nullable: false),
                     GameCode = table.Column<string>(type: "text", nullable: false),
                     QuizId = table.Column<string>(type: "text", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false)
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CurrentQuestionIndex = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -64,35 +65,15 @@ namespace GrpcServer.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     QuestionText = table.Column<string>(type: "text", nullable: false),
-                    QuizId = table.Column<string>(type: "text", nullable: false),
-                    DbQuizId = table.Column<string>(type: "text", nullable: true)
+                    QuizId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Questions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Questions_Quizzes_DbQuizId",
-                        column: x => x.DbQuizId,
+                        name: "FK_Questions_Quizzes_QuizId",
+                        column: x => x.QuizId,
                         principalTable: "Quizzes",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AnswerSubmissions",
-                columns: table => new
-                {
-                    QuestionId = table.Column<string>(type: "text", nullable: false),
-                    PlayerId = table.Column<string>(type: "text", nullable: false),
-                    AnswerId = table.Column<string>(type: "text", nullable: false),
-                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AnswerSubmissions", x => new { x.QuestionId, x.PlayerId });
-                    table.ForeignKey(
-                        name: "FK_AnswerSubmissions_Players_PlayerId",
-                        column: x => x.PlayerId,
-                        principalTable: "Players",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -117,10 +98,47 @@ namespace GrpcServer.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "AnswerSubmissions",
+                columns: table => new
+                {
+                    QuestionId = table.Column<string>(type: "text", nullable: false),
+                    PlayerId = table.Column<string>(type: "text", nullable: false),
+                    AnswerId = table.Column<string>(type: "text", nullable: false),
+                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AnswerSubmissions", x => new { x.QuestionId, x.PlayerId });
+                    table.ForeignKey(
+                        name: "FK_AnswerSubmissions_Answers_AnswerId",
+                        column: x => x.AnswerId,
+                        principalTable: "Answers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AnswerSubmissions_Players_PlayerId",
+                        column: x => x.PlayerId,
+                        principalTable: "Players",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AnswerSubmissions_Questions_QuestionId",
+                        column: x => x.QuestionId,
+                        principalTable: "Questions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Answers_QuestionId",
                 table: "Answers",
                 column: "QuestionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AnswerSubmissions_AnswerId",
+                table: "AnswerSubmissions",
+                column: "AnswerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnswerSubmissions_PlayerId",
@@ -133,31 +151,31 @@ namespace GrpcServer.Migrations
                 column: "GameId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Questions_DbQuizId",
+                name: "IX_Questions_QuizId",
                 table: "Questions",
-                column: "DbQuizId");
+                column: "QuizId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Answers");
-
-            migrationBuilder.DropTable(
                 name: "AnswerSubmissions");
 
             migrationBuilder.DropTable(
-                name: "Questions");
+                name: "Answers");
 
             migrationBuilder.DropTable(
                 name: "Players");
 
             migrationBuilder.DropTable(
-                name: "Quizzes");
+                name: "Questions");
 
             migrationBuilder.DropTable(
                 name: "Games");
+
+            migrationBuilder.DropTable(
+                name: "Quizzes");
         }
     }
 }
