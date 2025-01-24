@@ -1,334 +1,1 @@
-@page "/games/{id}"
-@using Grpc.Net.Client
-@using Grpc.Core.Utils;
-@using QuizApp
-@inject NavigationManager NavigationManager
-
-<h3>Gra</h3>
-
-@if (game_id == null)
-{
-    <p><em>�adowanie gry...</em></p>
-}
-else
-{
-    <div>
-        <h4 class="game-details-code">Kod  do do��czenia: @game_code</h4>
-        <p><strong>Status:</strong> <span  class="@GetStatusClass(status)">@status</span></p>
-        @if (status != "Zako�czona") {
-              <h5>Gracze:</h5>
-        @if (players == null || !players.Any())
-{
-    <p>Brak</p>
-}
-else
-{
-          <ul>
-          @foreach (var player in players)
-          {
-              <li>
-                  <span>
-                  @player.Name (@player.Score pkt)
-                  </span>
-                <button @onclick="() => SimulateAllAnswers(player.Id)" class="btn btn-primary">
-                    Symuluj odpowiedzi
-                </button>
-              </li>
-          }
-      </ul>
-}
-
-        }
-  
-        @if (status == "Oczekuj�ca")
-        {
-          @if (!players.Any())
-{
-    <p class="info-message">Dodaj graczy, aby m�c rozpocz�� gr�.</p>
-}
-
-<button class="start-game-button" @onclick="StartGame" disabled="@(players == null || !players.Any())">
-    Rozpocznij gr�
-</button>
-
-        }
-        else if (status == "W toku")
-        {
-            @if (questions.Count == 0)
-            {
-                <p><em>Brak pyta� w tej grze.</em></p>
-            }
-            else
-            {
-                @foreach (var question in questions)
-                {
-                    <div>
-                        <p><strong>Pytanie:</strong> @question.QuestionText</p>
-                        <ul>
-                            @foreach (var answer in question.Answers)
-                            {
-                                <li>
-                                    @answer.Text
-                                </li>
-                            }
-                        </ul>
-                    </div>
-                }
-            }
-        }
-        else if (status == "Zako�czona")
-        {
-            <p><em>Gra zako�czona.</em></p>
-            <p>Wyniki:</p>
-
-        var sortedPlayers = players.OrderByDescending(p => p.Score).ToList();
-
-    <ul>
-    @foreach (var player in sortedPlayers)
-    {
-        <li>@player.Name: @player.Score pkt</li>
-    }
-    </ul>
-        }
-
-        @if (status == "Oczekuj�ca")
-        {
-     <div>
-        <button @onclick="AddPlayer">Dodaj testowego gracza</button>
-    </div>
-        }
-    </div>
-}
-
-@code {
-    private string game_id;
-    private string game_code;
-    private string status;
-    private List<Player> players = new List<Player>();
-    private int current_question_index;
-    private List<Question> questions = new List<Question>();
-    [Parameter]
-    public string? Id { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await UpdateGameDetails();
-        await SubscribeToGameUpdates();
-    }
-
-     private string GetStatusClass(string status)
-    {
-        return status switch
-        {
-            "Zako�czona" => "status-success",
-            "W toku" => "status-inprogress",
-            "Oczekuj�ca" => "status-waiting",
-            _ => "status-default"
-        };
-    }
-
-    private async Task UpdateGameDetails()
-    {
-        try
-        {
-            // Tworzenie kana�u gRPC 
-            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-            {
-                HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-            });
-
-            // Tworzenie klienta gRPC
-            var client = new QuizService.QuizServiceClient(channel);
-
-            // Pobieranie gry
-            var request = new GameRequest { GameId = Id };
-            var response = await client.GetGameDetailsAsync(request);
-
-            game_id = response.GameId;
-            game_code = response.GameCode;
-            status = response.Status;
-            players = response.Players.ToList();
-            current_question_index = response.CurrentQuestionIndex;
-            questions = response.Questions.ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"B��d podczas �adowania gry: {ex.Message}");
-        }
-    }
-
-    private async Task StartGame()
-    {
-        try
-        {
-            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-            {
-                HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-            });
-
-            var client = new QuizService.QuizServiceClient(channel);
-
-            var request = new GameRequest { GameId = Id };
-            var response = await client.StartGameAsync(request);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"B��d podczas rozpoczynania gry: {ex.Message}");
-        }
-    }
-
-private async Task SubscribeToGameUpdates()
-{
-    try
-    {
-        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-        {
-            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-        });
-
-        var client = new QuizService.QuizServiceClient(channel);
-
-        var request = new GameRequest { GameId = Id };
-        using var call = client.StreamGameUpdates(request);
-        var cancellationToken = new CancellationToken();
-
-        while (await call.ResponseStream.MoveNext(cancellationToken))
-        {
-            var update = call.ResponseStream.Current;
-
-            // Aktualizuj dane gry
-            players = update.Players.ToList();
-            status = update.Status;
-
-            // Od�wie� interfejs u�ytkownika
-            StateHasChanged();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"B��d podczas subskrypcji streamu: {ex.Message}");
-    }
-}
-
-
-   private async Task AddPlayer()
-{
-    try
-    {
-        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-        {
-            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-        });
-
-        var client = new QuizService.QuizServiceClient(channel);
-
-        var joinGameRequest = new JoinGameRequest
-        {
-            GameCode = game_code, 
-            PlayerName = "Testowy Gracz" // Przyk�adowa nazwa gracza
-        };
-
-        var response = await client.JoinGameAsync(joinGameRequest);
-
-        Console.WriteLine("Player added successfully.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Unexpected error: {ex.Message}");
-    }
-}
-
-
- private async Task SimulateAllAnswers(string playerId)
-{
-    try
-    {
-        using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions
-        {
-            HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())
-        });
-
-        var client = new QuizService.QuizServiceClient(channel);
-
-        // Symulacja odpowiedzi gracza
-        foreach (var question in questions) 
-        {
-            // Pobranie pierwszej odpowiedzi dla pytania
-            var firstAnswerId = question.Answers?.FirstOrDefault()?.Id;
-
-            if (firstAnswerId == null)
-            {
-                Console.WriteLine($"Brak dost�pnych odpowiedzi dla pytania {question.Id}. Pomijam.");
-                continue;
-            }
-
-            var request = new AnswerRequest
-            {
-                GameId = Id,
-                PlayerId = playerId,
-                QuestionId = question.Id,
-                AnswerId = firstAnswerId 
-            };
-
-             await client.SubmitAnswerAsync(request);
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"B��d podczas symulacji odpowiedzi: {ex.Message}");
-    }
-}
-}
-
-<style>
-    .start-game-button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        margin-top: 20px;
-    }
-
-    .start-game-button:hover {
-        background-color: #45a049;
-    }
-
-    .get-game-results-button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        margin-top: 20px;
-    }
-
-    .get-game-results-button:hover {
-        background-color: #45a049;
-    }
-
-    .game-details-code {
-        padding: 1.5rem;
-        margin: 2rem 0;
-        background: #f2e8cf;
-        border-radius: 8px;
-    }
-
-    .status-succes {
-    color: #386641;
-    font-weight: bold;
-}
-.status-inprogress {
-    color: #a7c957;
-    font-weight: bold;
-}
-.status-waiting {
-    color: #bc4749;
-    font-weight: bold;
-}
-.status-default {
-    color: gray;
-    font-weight: normal;
-}
-
-</style>
+﻿@page "/games/{id}" @using Grpc.Net.Client @using Grpc.Core.Utils; @using QuizApp @inject NavigationManager NavigationManager  <h3>Gra</h3>  @if (game_id == null) {     <p><em>Ładowanie gry...</em></p> } else {     <div>         <h4 class="game-details-code">Kod  do dołączenia: @game_code</h4>         <p><strong>Status:</strong> <span  class="@GetStatusClass(status)">@status</span></p>         @if (status != "Zakończona") {               <h5>Gracze:</h5>         @if (players == null || !players.Any()) {     <p>Brak</p> } else {           <ul>           @foreach (var player in players)           {               <li>                   <span>                   @player.Name (@player.Score pkt)                   </span>                 <button @onclick="() => SimulateAllAnswers(player.Id)" class="btn btn-primary">                     Symuluj odpowiedzi                 </button>               </li>           }       </ul> }          }            @if (status == "Oczekująca")         {           @if (!players.Any()) {     <p class="info-message">Dodaj graczy, aby móc rozpocząć grę.</p> }  <button class="start-game-button" @onclick="StartGame" disabled="@(players == null || !players.Any())">     Rozpocznij grę </button>          }         else if (status == "W toku")         {             @if (questions.Count == 0)             {                 <p><em>Brak pytań w tej grze.</em></p>             }             else             {                 @foreach (var question in questions)                 {                     <div>                         <p><strong>Pytanie:</strong> @question.QuestionText</p>                         <ul>                             @foreach (var answer in question.Answers)                             {                                 <li>                                     @answer.Text                                 </li>                             }                         </ul>                     </div>                 }             }         }         else if (status == "Zakończona")         {             <p><em>Gra zakończona.</em></p>             <p>Wyniki:</p>          var sortedPlayers = players.OrderByDescending(p => p.Score).ToList();      <ul>     @foreach (var player in sortedPlayers)     {         <li>@player.Name: @player.Score pkt</li>     }     </ul>         }          @if (status == "Oczekująca")         {      <div>         <button @onclick="AddPlayer">Dodaj testowego gracza</button>     </div>         }     </div> }  @code {     private string game_id;     private string game_code;     private string status;     private List<Player> players = new List<Player>();     private int current_question_index;     private List<Question> questions = new List<Question>();     [Parameter]     public string? Id { get; set; }      protected override async Task OnInitializedAsync()     {         await UpdateGameDetails();         await SubscribeToGameUpdates();     }       private string GetStatusClass(string status)     {         return status switch         {             "Zakończona" => "status-success",             "W toku" => "status-inprogress",             "Oczekująca" => "status-waiting",             _ => "status-default"         };     }      private async Task UpdateGameDetails()     {         try         {             // Tworzenie kanału gRPC              using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions             {                 HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())             });              // Tworzenie klienta gRPC             var client = new QuizService.QuizServiceClient(channel);              // Pobieranie gry             var request = new GameRequest { GameId = Id };             var response = await client.GetGameDetailsAsync(request);              game_id = response.GameId;             game_code = response.GameCode;             status = response.Status;             players = response.Players.ToList();             current_question_index = response.CurrentQuestionIndex;             questions = response.Questions.ToList();         }         catch (Exception ex)         {             Console.WriteLine($"Błąd podczas ładowania gry: {ex.Message}");         }     }      private async Task StartGame()     {         try         {             using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions             {                 HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())             });              var client = new QuizService.QuizServiceClient(channel);              var request = new GameRequest { GameId = Id };             var response = await client.StartGameAsync(request);         }         catch (Exception ex)         {             Console.WriteLine($"Błąd podczas rozpoczynania gry: {ex.Message}");         }     }  private async Task SubscribeToGameUpdates() {     try     {         using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions         {             HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())         });          var client = new QuizService.QuizServiceClient(channel);          var request = new GameRequest { GameId = Id };         using var call = client.StreamGameUpdates(request);         var cancellationToken = new CancellationToken();          while (await call.ResponseStream.MoveNext(cancellationToken))         {             var update = call.ResponseStream.Current;              // Aktualizuj dane gry             players = update.Players.ToList();             status = update.Status;              // Odśwież interfejs użytkownika             StateHasChanged();         }     }     catch (Exception ex)     {         Console.WriteLine($"Błąd podczas subskrypcji streamu: {ex.Message}");     } }      private async Task AddPlayer() {     try     {         using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions         {             HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())         });          var client = new QuizService.QuizServiceClient(channel);          var joinGameRequest = new JoinGameRequest         {             GameCode = game_code,              PlayerName = "Testowy Gracz" // Przykładowa nazwa gracza         };          var response = await client.JoinGameAsync(joinGameRequest);          Console.WriteLine("Player added successfully.");     }     catch (Exception ex)     {         Console.WriteLine($"Unexpected error: {ex.Message}");     } }    private async Task SimulateAllAnswers(string playerId) {     try     {         using var channel = Grpc.Net.Client.GrpcChannel.ForAddress("http://localhost:5195/", new Grpc.Net.Client.GrpcChannelOptions         {             HttpHandler = new Grpc.Net.Client.Web.GrpcWebHandler(new HttpClientHandler())         });          var client = new QuizService.QuizServiceClient(channel);          // Symulacja odpowiedzi gracza         foreach (var question in questions)          {             // Pobranie pierwszej odpowiedzi dla pytania             var firstAnswerId = question.Answers?.FirstOrDefault()?.Id;              if (firstAnswerId == null)             {                 Console.WriteLine($"Brak dostępnych odpowiedzi dla pytania {question.Id}. Pomijam.");                 continue;             }              var request = new AnswerRequest             {                 GameId = Id,                 PlayerId = playerId,                 QuestionId = question.Id,                 AnswerId = firstAnswerId              };               await client.SubmitAnswerAsync(request);         }     }     catch (Exception ex)     {         Console.WriteLine($"Błąd podczas symulacji odpowiedzi: {ex.Message}");     } } }  <style>     .start-game-button {         background-color: #4CAF50;         color: white;         padding: 10px 20px;         border: none;         cursor: pointer;         margin-top: 20px;     }      .start-game-button:hover {         background-color: #45a049;     }      .get-game-results-button {         background-color: #4CAF50;         color: white;         padding: 10px 20px;         border: none;         cursor: pointer;         margin-top: 20px;     }      .get-game-results-button:hover {         background-color: #45a049;     }      .game-details-code {         padding: 1.5rem;         margin: 2rem 0;         background: #f2e8cf;         border-radius: 8px;     }      .status-succes {     color: #386641;     font-weight: bold; } .status-inprogress {     color: #a7c957;     font-weight: bold; } .status-waiting {     color: #bc4749;     font-weight: bold; } .status-default {     color: gray;     font-weight: normal; }  </style> 
