@@ -29,6 +29,7 @@
         android:layout_marginBottom="8dp"
         android:textColor="@android:color/black" />
 
+    
     <TextView
         android:id="@+id/player_score"
         android:layout_width="wrap_content"
@@ -39,13 +40,29 @@
         android:layout_marginBottom="16dp"
         android:textColor="@android:color/black" />
 
-    <!-- Lista rankingu -->
-    <LinearLayout
-        android:id="@+id/ranking_list"
-        android:orientation="vertical"
+    <!-- Kontener dla rankingu i loadera -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp">
+
+        <!-- Loader oczekiwania -->
+        <ProgressBar
+            android:id="@+id/loader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminate="true" />
+
+        <!-- Kontener na ranking (początkowo niewidoczny) -->
+        <LinearLayout
+            android:id="@+id/ranking_list"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Przyciski nawigacji -->
     <Button

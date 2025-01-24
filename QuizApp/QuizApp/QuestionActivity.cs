@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Android.Graphics;
 using System;
 using System.Collections.Generic;
+using Android.Content;
 
 namespace QuizApp
 {
@@ -18,6 +19,7 @@ namespace QuizApp
         private string _currentQuestionId;
         private string _gameId;
         private string _playerId;
+        private bool _isLastQuestion;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -87,6 +89,8 @@ namespace QuizApp
                     // Zapisz ID pytania
                     _currentQuestionId = questionResponse.QuestionId;
 
+                    _isLastQuestion = questionResponse.IsLastQuestion;
+
                     // Jeśli to ostatnie pytanie
                     if (questionResponse.IsFinished)
                     {
@@ -143,8 +147,12 @@ namespace QuizApp
 
                 RunOnUiThread(() =>
                 {
-                    // Przejście do ekranu pośredniego
-                    var intent = new Android.Content.Intent(this, typeof(IntermediateScreenActivity));
+                    Intent intent;
+                    if (_isLastQuestion)
+                        intent = new Intent(this, typeof(QuizEndActivity));
+                    else
+                        intent = new Intent(this, typeof(IntermediateScreenActivity));
+
                     intent.PutExtra("isAnswerCorrect", response.IsCorrect);
                     intent.PutExtra("gameId", _gameId);
                     intent.PutExtra("playerId", _playerId);

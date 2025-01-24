@@ -85,6 +85,9 @@ namespace QuizApp
             }
             catch (Exception ex)
             {
+                if (ex.Message.Contains("Cancelled"))
+                    return;
+
                 RunOnUiThread(() =>
                 {
                     Toast.MakeText(this, $"Błąd: {ex.Message}", ToastLength.Long).Show();
